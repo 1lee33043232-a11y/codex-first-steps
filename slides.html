@@ -137,6 +137,21 @@ table.tbl td:first-child{color:var(--sub)}
 #nav button:focus-visible, #nav a:focus-visible{outline:2px solid #FFFFFF;outline-offset:2px}
 #nav .grow{flex:1}
 #counter{font-variant-numeric:tabular-nums;font-weight:800;min-width:5.5em;text-align:center}
+#syncStatus{font-size:12px;color:#BBBBBB;white-space:nowrap}
+#adminControls{display:none;align-items:center;gap:6px}
+#adminControls.show{display:flex}
+#adminControls button{padding:0 10px}
+.login{position:fixed;inset:0;z-index:600;background:rgba(10,10,10,.8);display:flex;align-items:center;justify-content:center;padding:16px}
+.login[hidden]{display:none}
+.login-box{background:#FFF;color:#111;border-radius:14px;padding:24px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px;font-family:inherit}
+.login-box h2{font-size:20px}
+.login-box label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700}
+.login-box input{font:inherit;font-weight:500;border:1px solid #BBB;border-radius:8px;padding:10px 12px;min-height:44px}
+.login-box .row{display:flex;gap:8px}
+.login-box button{font:inherit;font-weight:800;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid #BBB;background:#FFF;cursor:pointer}
+.login-box button.primary{background:#111;color:#FFF;border-color:#111}
+.login-box .err{color:#B71C1C;font-size:13px;font-weight:700;min-height:1.2em}
+#nav button[hidden]{display:none!important}
 .hint{color:#9A9A9A;font-size:12.5px}
 #progress{position:fixed;left:0;bottom:var(--nav-h);height:3px;background:#FFFFFF;width:0;z-index:201;transition:width .2s}
 @media (max-width:760px){ #nav .hide-sm{display:none} }
@@ -171,6 +186,8 @@ table.tbl td:first-child{color:var(--sub)}
   #stage > .slide{position:relative!important;display:flex!important;width:13.333in;height:7.5in;
     break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #stage > .slide:last-child{break-after:auto;page-break-after:auto}
+  html.no-pdf #stage{display:none!important}
+  html.no-pdf body::before{content:"PDF 저장이 비활성화되어 있습니다. 강사에게 문의하세요.";display:block;padding:2rem;font-size:14pt;color:#000}
 }
 </style>
 </head>
@@ -289,6 +306,13 @@ table.tbl td:first-child{color:var(--sub)}
   <button type="button" id="navPrev" aria-label="이전 슬라이드">◀</button>
   <span id="counter" aria-live="polite">1 / 8</span>
   <button type="button" id="navNext" aria-label="다음 슬라이드">▶</button>
+  <span id="syncStatus" aria-live="polite"></span>
+  <div id="adminControls" aria-label="강사 동기화 제어">
+    <button type="button" id="lockBtn" aria-pressed="false">잠금 OFF</button>
+    <button type="button" id="pdfBtn" aria-pressed="true">PDF ON</button>
+  </div>
+  <button type="button" id="loginOpen" hidden>강사 로그인</button>
+  <button type="button" id="logoutBtn" hidden>로그아웃</button>
   <span class="grow"></span>
   <span class="hint hide-sm">← → 이동 · G 전체보기 · P PDF</span>
   <button type="button" id="gridBtn" aria-haspopup="dialog" aria-controls="gridOverlay">▦ 전체 보기</button>
@@ -300,16 +324,28 @@ table.tbl td:first-child{color:var(--sub)}
   <div class="grid-list" id="gridList"></div>
 </div>
 
+<div class="login" id="loginDialog" hidden>
+  <form class="login-box" id="loginForm">
+    <h2>강사 로그인</h2>
+    <label>이메일<input id="loginEmail" type="email" autocomplete="username" required></label>
+    <label>비밀번호<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+    <div class="err" id="loginError" role="status"></div>
+    <div class="row"><button type="button" id="loginCancel">취소</button><button class="primary" type="submit">로그인</button></div>
+  </form>
+</div>
+
 <script>
 (function(){
   /* ▼ 내 강의 고유 접두사로 변경 (예: 'ai0927_') */
-  var LS = 'mykit_';
+  var LS = 'codex100_';
 
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(stage.querySelectorAll(':scope > section.slide'));
   var total = slides.length;
   var STORAGE_KEY = LS + 'slide';
   var idx = 0;
+  var adminMode = new URLSearchParams(location.search).has('admin');
+  var isAdmin = false, sync = null, syncReady = false, lockOn = false, pdfOn = true, applyingRemote = false;
 
   function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); } catch (e) { /* 저장 불가 환경 · 무시 */ } }
@@ -334,6 +370,7 @@ table.tbl td:first-child{color:var(--sub)}
   var lastFocus = null;
 
   function show(i){
+    if (syncReady && lockOn && !isAdmin && !applyingRemote) return;
     idx = Math.max(0, Math.min(total - 1, i));
     slides.forEach(function(s, n){
       s.classList.toggle('active', n === idx);
@@ -345,6 +382,7 @@ table.tbl td:first-child{color:var(--sub)}
     navNext.disabled = idx === total - 1;
     minis.forEach(function(m, n){ m.classList.toggle('current', n === idx); });
     lsSet(STORAGE_KEY, String(idx));
+    if (syncReady && isAdmin && !applyingRemote) sync.setSlide(idx).catch(showSyncError);
   }
 
   function scaleMinis(){
@@ -392,6 +430,63 @@ table.tbl td:first-child{color:var(--sub)}
   document.getElementById('gridBtn').addEventListener('click', openGrid);
   document.getElementById('gridClose').addEventListener('click', closeGrid);
   document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+
+  var loginDialog = document.getElementById('loginDialog');
+  var loginForm = document.getElementById('loginForm');
+  document.getElementById('loginOpen').addEventListener('click', function(){ loginDialog.hidden = false; document.getElementById('loginEmail').focus(); });
+  document.getElementById('loginCancel').addEventListener('click', function(){ loginDialog.hidden = true; });
+  document.getElementById('logoutBtn').addEventListener('click', function(){ if(sync) sync.logout().catch(showSyncError); });
+  document.getElementById('lockBtn').addEventListener('click', function(){ if(sync) sync.setLock(!lockOn).catch(showSyncError); });
+  document.getElementById('pdfBtn').addEventListener('click', function(){ if(sync) sync.setPdf(!pdfOn).catch(showSyncError); });
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault(); if (!sync) return;
+    document.getElementById('loginError').textContent = '';
+    sync.login(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)
+      .then(function(){ loginDialog.hidden = true; loginForm.reset(); })
+      .catch(function(){ document.getElementById('loginError').textContent = '로그인 정보를 확인해 주세요.'; });
+  });
+  function setStatus(s){ document.getElementById('syncStatus').textContent = s; }
+  function showSyncError(){ setStatus('연결 확인 필요'); }
+  function initializeFirebase(){
+    var cfg = window.FIREBASE_CONFIG;
+    if (!cfg || !cfg.apiKey || cfg.apiKey.indexOf('[') !== -1 || !cfg.databaseURL || cfg.databaseURL.indexOf('[') !== -1) {
+      setStatus(adminMode ? 'Firebase 설정 후 로그인 가능' : '자유 열람');
+      return;
+    }
+    import('./firebase/firebase-sync.js').then(function(mod){
+      if (!mod.isConfigured(cfg)) { setStatus('자유 열람'); return; }
+      sync = mod.createSync(cfg, window.DECK_ID || 'codex-first-steps-20261009');
+      syncReady = true;
+      document.getElementById('loginOpen').hidden = !adminMode;
+      if (adminMode) setStatus('강사 로그인 필요'); else setStatus('청중 자유 이동');
+      sync.onState(function(state){
+        if (!state) { setStatus('Firebase 연결 확인 필요'); return; }
+        lockOn = !!state.locked; pdfOn = state.pdf !== false;
+        document.documentElement.classList.toggle('no-pdf', !pdfOn);
+        document.getElementById('printBtn').disabled = !pdfOn;
+        document.getElementById('lockBtn').textContent = '잠금 ' + (lockOn ? 'ON' : 'OFF');
+        document.getElementById('lockBtn').setAttribute('aria-pressed', String(lockOn));
+        document.getElementById('pdfBtn').textContent = 'PDF ' + (pdfOn ? 'ON' : 'OFF');
+        document.getElementById('pdfBtn').setAttribute('aria-pressed', String(pdfOn));
+        if (lockOn && !isAdmin && Number.isInteger(state.slide) && state.slide >= 0 && state.slide < total && state.slide !== idx) {
+          applyingRemote = true; show(state.slide); applyingRemote = false;
+        }
+        setStatus(lockOn ? '청중 잠금 ON' : '청중 자유 이동');
+      });
+      sync.onAdmin(function(allowed){
+        isAdmin = !!allowed;
+        document.getElementById('adminControls').classList.toggle('show', isAdmin && adminMode);
+        document.getElementById('loginOpen').hidden = !adminMode || isAdmin;
+        document.getElementById('logoutBtn').hidden = !adminMode || !isAdmin;
+        if (isAdmin) { setStatus('강사 제어 중'); sync.setSlide(idx).catch(showSyncError); }
+      });
+    }).catch(function(){ setStatus('Firebase 연결 확인 필요'); });
+  }
+  var firebaseConfigScript = document.createElement('script');
+  firebaseConfigScript.src = './firebase/firebase-config.js';
+  firebaseConfigScript.onload = initializeFirebase;
+  firebaseConfigScript.onerror = function(){ setStatus('자유 열람'); };
+  document.head.appendChild(firebaseConfigScript);
 
   /* 타이머: 벽시계 기준 (탭이 뒤로 가도 시간이 밀리지 않음) */
   function initTimer(el){
