@@ -1,19 +1,15 @@
 <!DOCTYPE html>
 <!--
-  웹슬라이드 스타터 · 두온교육 「강의 사이트 제작 노하우」 참가자 키트
-  먼저 바꿀 것
-  1) 아래 스크립트의 LS = 'mykit_' → 내 강의 고유 접두사 (예: 'ai0927_')
-     접두사가 겹치면 다른 강의 사이트와 저장값이 섞임
-  2) <title>, description, 표지·마침 슬라이드의 [ ] 자리
-  3) 슬라이드 추가·삭제 시 aria-label 번호와 주석 번호 함께 재정렬 (AGENTS.md 참고)
-  외부 파일 없음 · 백엔드 없음 · 이 파일 하나로 동작
+  코덱스 첫걸음 강의 웹슬라이드 · 36장
+  Firebase 설정 전에는 자유 열람 · 설정 뒤에는 강사용 ?admin 과 청중 동기화 사용
+  localStorage 접두사 codex100_ · 번호와 목차는 admin.html 에서 함께 관리
 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>[강의 제목] 슬라이드</title>
-<meta name="description" content="[강의 제목] 수업 슬라이드 · [날짜] · 강사 [이름]">
+<title>코덱스 첫걸음과 소개 페이지 제작 · 정확한 수정 요청과 안심 활용법</title>
+<meta name="description" content="코딩 경험이 없는 40~60대 중장년층을 위한 36장 강의 슬라이드 · 2026년 10월 9일 · 강사 이연희">
 <meta name="theme-color" content="#111111">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -154,7 +150,14 @@ table.tbl td:first-child{color:var(--sub)}
 #nav button[hidden]{display:none!important}
 .hint{color:#9A9A9A;font-size:12.5px}
 #progress{position:fixed;left:0;bottom:var(--nav-h);height:3px;background:#FFFFFF;width:0;z-index:201;transition:width .2s}
-@media (max-width:760px){ #nav .hide-sm{display:none} }
+@media (max-width:760px){
+  :root{--nav-h:112px}
+  #nav{height:auto;min-height:var(--nav-h);flex-wrap:wrap;align-content:center;gap:6px;padding:6px 8px}
+  #nav .hide-sm,#nav .grow{display:none}
+  #adminControls{gap:4px}
+  #adminControls button{padding:0 7px;font-size:12px}
+}
+@media (max-width:480px){:root{--nav-h:160px}}
 
 /* 전체보기: 실제 축소판 */
 .grid-overlay{position:fixed;inset:0;z-index:500;background:rgba(10,10,10,.97);display:none;overflow:auto;padding:22px 22px 40px}
@@ -243,13 +246,13 @@ table.tbl td:first-child{color:var(--sub)}
     {title:'실습 준비물', section:'실습 준비', points:['노트북과 인터넷 연결','코덱스가 열린 작업 폴더','소개할 강의·모임 정보','사진은 공개해도 되는 자료만 사용']},
     {title:'작업 폴더 선택', section:'첫 화면 준비', points:['작업 폴더: 이번 결과물을 저장할 장소','시작 전: 폴더 이름과 안의 파일 확인','요청 문장: 작업할 폴더와 파일을 구체적으로 지정','파일을 지우거나 덮어쓰기 전 확인']},
     {title:'첫 요청 문장', section:'첫 대화', prompt:'이 폴더의 파일을 먼저 살펴봐줘.\n나는 코딩 경험이 없는 초보야.\n현재 파일을 바꾸기 전에 어떤 파일을 어떻게 수정할지 쉬운 말로 설명해줘.'},
-    {title:'첫 결과 확인', section:'결과 읽기', points:['무엇을 만들었는지 요약 확인','바뀐 파일 이름 확인','미리보기에서 제목·내용·버튼 확인','뜻을 모르는 안내는 그대로 질문']},
-    {title:'작업 지시 구성', section:'요청의 네 요소', cards:[['대상','누구를 위한 것인지','처음 코덱스를 쓰는 성인'],['목표','무엇을 만들지','강의 소개 랜딩페이지'],['조건','반드시 지킬 것','흑백 톤 · 모바일 대응'],['범위','어떤 파일인지','index.html만 수정']]},
+    {title:'첫 결과 확인', section:'결과 읽기', points:['생성 결과 요약 확인','바뀐 파일 이름 확인','미리보기에서 제목·내용·버튼 확인','이해 어려운 안내: 쉬운 설명 요청']},
+    {title:'작업 지시 구성', section:'요청의 네 요소', cards:[['대상','대상 사용자','처음 코덱스를 쓰는 성인'],['목표','완성 목표','강의 소개 랜딩페이지'],['조건','필수 조건','흑백 톤 · 모바일 대응'],['범위','수정 파일','index.html만 수정']]},
     {title:'소개 페이지 구성', section:'페이지 설계', points:['첫 화면: 강의명·대상·일정','안내: 대상·진행 방식·준비물','커리큘럼: 배울 내용과 순서','강사·자료: 소개와 복사 가능한 프롬프트']},
-    {title:'방문자 흐름 설계', section:'읽기 쉬운 순서', cards:[['발견','무슨 강의인가','한눈에 보는 제목과 대상'],['이해','나에게 필요한가','일정·내용·강사 확인'],['참여','어떻게 시작하나','신청 또는 슬라이드 입장']]},
-    {title:'소개 페이지 초안 실습', section:'실습 1 · 10분', prompt:'초보자 대상 강의 소개 페이지를 만들어줘.\n강의명: 코덱스 첫걸음과 소개 페이지 제작, 정확한 수정 요청과 안심 활용법\n대상: 코딩 경험이 없고 코덱스를 처음 쓰는 40~60대\n일시: 2026년 10월 9일 금요일 저녁 8시, 온라인 Zoom, 50분씩 2회 총 100분\n구성: 강의 소개, 대상·일정, 커리큘럼, 강사 소개, 실습 자료, 슬라이드 입장 버튼\n조건: 휴대폰에서도 가로 스크롤 없이, 흑백 톤, index.html만 수정해줘.', minutes:10},
-    {title:'결과물 확인', section:'초안 점검', points:['강의명·강사·날짜의 정확성','필수 섹션의 순서와 빠진 내용','버튼을 눌렀을 때 맞는 페이지로 이동','휴대폰 폭에서 글과 카드 확인']},
-    {title:'휴식', section:'1부 마침 · 휴식', pause:true, points:['잠시 눈과 손 쉬기','2부 준비: 수정할 부분 한 가지 고르기','5분 뒤 정확한 수정 요청 시작'], minutes:5},
+    {title:'방문자 흐름 설계', section:'읽기 쉬운 순서', cards:[['발견','강의 개요','강의명과 대상 한눈에 보기'],['이해','수강 대상','일정·내용·강사 정보 확인'],['참여','참여 방법','신청 또는 슬라이드 입장']]},
+    {title:'소개 페이지 초안 실습', section:'실습 1 · 10분', prompt:'강의 소개 페이지를 만들어줘.\n강의명: 코덱스 첫걸음과 소개 페이지 제작, 정확한 수정 요청과 안심 활용법\n대상: 코딩 경험 없는 40~60대 중장년층\n일시: 2026년 10월 9일 저녁 8시 · Zoom · 총 100분\n구성: 소개 · 대상/일정 · 커리큘럼 · 강사 · 자료 · 슬라이드 입장\n조건: 흑백 톤 · 모바일 가로 스크롤 없음 · index.html만 수정', minutes:10},
+    {title:'결과물 확인', section:'초안 점검', points:['강의명·강사·날짜의 정확성','필수 섹션의 순서와 빠진 내용','버튼 연결 대상 페이지 확인','휴대폰 폭에서 글과 카드 확인']},
+    {title:'휴식', section:'1부 마침 · 휴식', pause:true, breakNote:'5분 휴식 · 2부 준비: 수정할 부분 한 가지 고르기', minutes:5},
     {title:'2부 학습 목표', section:'2부 · 수정과 안심 활용', cards:[['수정','원하는 변화','고칠 항목과 위치 지정'],['검토','작업 결과','요청한 범위와 실제 변경 비교'],['보호','파일과 정보','개인정보·링크·저장 상태 점검']]},
     {title:'정확한 수정 요청', section:'수정 요청의 기준', points:['위치: 어느 파일·어느 부분인지','변경: 지금 상태를 어떻게 바꿀지','유지: 그대로 둘 항목은 무엇인지','확인: 저장 전에 결과를 어떻게 볼지']},
     {title:'모호한 요청과 구체적 요청', section:'요청 비교', compare:[['아쉬운 요청','예쁘게 바꿔줘','위치·색·유지 조건이 불분명'],['구체적 요청','index.html 강사 소개의 사진만 둥근 사각형으로 바꿔줘. 이름과 글은 유지해줘.','파일·위치·변경·유지 조건 포함']]},
@@ -259,10 +262,10 @@ table.tbl td:first-child{color:var(--sub)}
     {title:'디자인 수정 시연', section:'수정 예시 · 사진', points:['위치: 강사 소개 사진','요청: 모서리가 둥근 사각형으로 배치','유지: 원본 비율과 얼굴 전체','확인: 휴대폰 화면에서도 사진 확인']},
     {title:'수정 요청 실습', section:'실습 2 · 12분', prompt:'강의 랜딩페이지의 [수정할 위치]만 바꿔줘.\n현재 상태: [현재 보이는 모습]\n원하는 상태: [바라는 결과]\n그대로 둘 것: 나머지 문구와 다른 파일\n수정 후 바뀐 파일 이름, 바뀐 내용, 확인할 위치를 순서대로 알려줘.', minutes:12},
     {title:'수정 결과 비교', section:'전후 점검', cards:[['요청','내가 부탁한 내용','위치·변경·유지 조건'],['결과','실제로 바뀐 내용','미리보기와 수정 파일'],['판단','다음 행동','완료 · 추가 요청 · 되돌리기']]},
-    {title:'휴대폰 화면 점검', section:'모바일 확인', points:['글자가 잘리지 않는지','버튼을 손가락으로 누르기 쉬운지','사진과 카드가 화면 안에 들어오는지','가로로 밀어야 하는 화면이 없는지']},
+    {title:'휴대폰 화면 점검', section:'모바일 확인', points:['글자 잘림 여부','버튼 터치 편의성','사진·카드의 화면 안 배치','가로 스크롤 발생 여부']},
     {title:'오류 안내 대응', section:'문제 해결', points:['오류 문구를 그대로 읽기','화면 캡처와 함께 쉬운 설명 요청','원인 추측보다 재현 단계 전달','중요한 파일은 백업 후 재시도']},
     {title:'변경 파일 확인', section:'저장 확인', points:['파일 이름과 수정 시각 확인','미리보기에서 내용 확인','원하지 않은 파일 변경 여부 확인','공유 전 링크와 공개 범위 확인']},
-    {title:'되돌리기와 보관', section:'복구 준비', cards:[['사본','중요 파일 복사','수정 전 원본 보관'],['기록','변경 요약 확인','무엇이 달라졌는지 파악'],['복구','이전 상태 요청','필요한 파일만 되돌리기']]},
+    {title:'되돌리기와 보관', section:'복구 준비', cards:[['사본','중요 파일 복사','수정 전 원본 보관'],['기록','변경 요약 확인','변경 내용 파악'],['복구','이전 상태 요청','필요한 파일만 되돌리기']]},
     {title:'개인정보 보호', section:'안심 활용', points:['비밀번호·인증번호 입력 금지','주민번호·주소·연락처 최소화','실제 고객·수강생 정보 비공개','공개 자료에는 동의받은 사진만 사용']},
     {title:'링크와 공유 점검', section:'공개 전 확인', points:['슬라이드·자료 버튼의 연결 확인','공개해도 되는 내용만 포함','외부 공유 주소를 직접 열어 확인','잘못된 공개 링크는 바로 수정']},
     {title:'AI 결과 검토', section:'사람의 최종 확인', points:['이름·날짜·기관명 사실 확인','링크·숫자·맞춤법 확인','저작권과 사진 사용 권한 확인','최종 게시 결정은 내가 직접']},
@@ -284,7 +287,7 @@ table.tbl td:first-child{color:var(--sub)}
     if(d.cards){var grid=make('div','card-grid '+(d.cards.length===4?'c4':d.cards.length===2?'c2':'c3'));d.cards.forEach(function(card){var box=make('div','card');box.appendChild(make('div','n',card[0]));box.appendChild(make('div','t',card[1]));box.appendChild(make('div','d',card[2]));grid.appendChild(box);});c.appendChild(grid);}
     if(d.compare){var grid2=make('div','card-grid c2');d.compare.forEach(function(card,n){var box=make('div','card '+(n?'good':'bad'));box.appendChild(make('div','t',card[0]));box.appendChild(make('div','d',card[1]));box.appendChild(make('div','d',card[2]));grid2.appendChild(box);});c.appendChild(grid2);}
     if(d.points){var ul=make('ul','bullets');d.points.forEach(function(point){ul.appendChild(make('li','',point));});c.appendChild(ul);}
-    if(d.pause){var timer=make('button','break-big');timer.type='button';timer.dataset.minutes=String(d.minutes);timer.setAttribute('aria-label','휴식 타이머 '+d.minutes+'분');timer.appendChild(make('span','time',d.minutes+':00'));c.appendChild(timer);}
+    if(d.pause){var timer=make('button','break-big');timer.type='button';timer.dataset.minutes=String(d.minutes);timer.setAttribute('aria-label','휴식 타이머 '+d.minutes+'분');timer.appendChild(make('span','time',d.minutes+':00'));c.appendChild(timer);c.appendChild(make('p','lede',d.breakNote));}
     if(d.prompt){var box=make('div','prompt-card');box.appendChild(make('div','label','복사해서 사용 · '+d.section));var q=make('blockquote','',d.prompt);q.id='pt-'+(i+1);box.appendChild(q);var b=make('button','copy-btn','복사');b.type='button';b.dataset.copyTarget=q.id;b.setAttribute('aria-label',d.title+' 프롬프트 복사');box.appendChild(b);c.appendChild(box);}
     if(d.minutes&&!d.pause){var timer2=make('button','timer-chip');timer2.type='button';timer2.dataset.minutes=String(d.minutes);timer2.appendChild(document.createTextNode('⏱ '));timer2.appendChild(make('span','time',d.minutes+':00'));timer2.appendChild(document.createTextNode(' 실습 시간 '));timer2.appendChild(make('span','state','정지'));c.appendChild(timer2);}
     s.appendChild(c);stage.appendChild(s);
