@@ -7,7 +7,7 @@
  * ============================================================ */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import {
-  getDatabase, ref, get, set, update, push, onValue, onDisconnect, serverTimestamp
+  getDatabase, ref, set, update, push, onValue, onDisconnect, serverTimestamp, runTransaction
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -17,7 +17,9 @@ const DEFAULT_STATE = { slide: 0, locked: true, pdf: true };
 
 /* firebase-config.js 를 아직 채우지 않았으면 false - 이때 덱은 자유 열람으로 동작 */
 export function isConfigured(cfg) {
-  return !!(cfg && typeof cfg.apiKey === 'string' && cfg.apiKey && !cfg.apiKey.includes('[') && cfg.databaseURL);
+  return !!(cfg && ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'].every(
+    (key) => typeof cfg[key] === 'string' && cfg[key].trim() && !/[\[\]…]/.test(cfg[key])
+  ) && /^https:\/\//.test(cfg.databaseURL));
 }
 
 export function createSync(cfg, deckId) {
@@ -30,18 +32,33 @@ export function createSync(cfg, deckId) {
   let isAdmin = false;
   let user = null;
   const adminListeners = [];
+  const errorListeners = [];
+  let stopAdmin = null, revision = 0, permissionRevision = 0;
+  const reportError = (e) => errorListeners.forEach((cb) => cb(e));
+  const notifyAdmin = () => adminListeners.forEach((cb) => cb(isAdmin, user));
 
   /* 로그인만으로는 부족 - 이메일 가입은 누구나 가능하므로 admins 목록에 있는 UID 인지 확인 */
-  onAuthStateChanged(auth, async (u) => {
-    user = u; isAdmin = false;
-    if (u) {
-      try { isAdmin = (await get(ref(db, 'admins/' + u.uid))).val() === true; } catch (e) { isAdmin = false; }
-      if (isAdmin) {
-        const cur = await get(stateRef);
-        if (!cur.exists()) await set(stateRef, { ...DEFAULT_STATE, updatedAt: serverTimestamp() });
+  onAuthStateChanged(auth, (u) => {
+    const current = ++revision;
+    ++permissionRevision;
+    if (stopAdmin) stopAdmin();
+    stopAdmin = null;
+    user = u; isAdmin = false; notifyAdmin();
+    if (!u) return;
+    stopAdmin = onValue(ref(db, 'admins/' + u.uid), async (s) => {
+      if (current !== revision) return;
+      const permission = ++permissionRevision;
+      isAdmin = false;
+      if (s.val() === true) {
+        try {
+          // 최초 로그인 두 창에서도 기존 상태를 덮어쓰지 않기
+          await runTransaction(stateRef, (value) => value || { ...DEFAULT_STATE, updatedAt: serverTimestamp() });
+          if (current !== revision || permission !== permissionRevision) return;
+          isAdmin = true;
+        } catch (e) { reportError(e); }
       }
-    }
-    adminListeners.forEach((cb) => cb(isAdmin, user));
+      notifyAdmin();
+    }, (e) => { if (current !== revision) return; ++permissionRevision; isAdmin = false; notifyAdmin(); reportError(e); });
   });
 
   function patch(values) {
@@ -50,6 +67,7 @@ export function createSync(cfg, deckId) {
   }
 
   return {
+    onError(cb) { errorListeners.push(cb); },
     /* 상태가 바뀔 때마다 즉시 호출 (폴링 없음) */
     onState(cb) {
       return onValue(stateRef, (s) => cb({ ...DEFAULT_STATE, ...(s.val() || {}) }), () => cb(null));
