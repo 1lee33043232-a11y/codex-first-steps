@@ -181,7 +181,7 @@ td.act{text-align:right;white-space:nowrap}
   <!-- 서버 연결 지점: decks/{deckId}/state (slide, locked, pdf, updatedAt) -->
   <section class="card" aria-labelledby="hSlides">
     <h2 id="hSlides">3. 슬라이드 진행</h2>
-    <div class="now" aria-live="polite"><span class="num" id="curNum">1</span><span class="tot" id="curTotal">/ 36</span><span class="ttl" id="curTitle">표지</span></div>
+    <div class="now" aria-live="polite"><span class="num" id="curNum">1</span><span class="tot" id="curTotal">/ 22</span><span class="ttl" id="curTitle">노트북LM 마스터하기</span></div>
     <div class="row"><button type="button" class="btn" id="prevBtn">◀ 이전</button><button type="button" class="btn" id="nextBtn">다음 ▶</button></div>
     <div class="jump" id="jump" role="group" aria-label="슬라이드 번호로 이동"></div>
     <div class="switchrow"><p id="swLockDesc"><b>청중 화면 잠금</b>ON이면 청중이 강사 장을 따라감</p><div class="sw-wrap"><span class="sw-state" id="swLockState">OFF</span><div class="switch" id="swLock" role="switch" aria-checked="false" tabindex="0" aria-labelledby="swLockDesc"></div></div></div>
@@ -245,8 +245,8 @@ td.act{text-align:right;white-space:nowrap}
   var STATE_KEY = LS + 'admin';
   var AUTH_KEY = LS + 'admin_ok';
   var DEMO_PW = '1234';
-  var TITLES = ['표지','100분 진행 순서','오늘의 목표','코덱스 첫걸음','코덱스와 대화형 AI','코덱스 작업 흐름','익숙해질 화면 용어','안전한 시작 원칙','실습 준비물','작업 폴더 선택','첫 요청 문장','첫 결과 확인','작업 지시 구성','소개 페이지 구성','방문자 흐름 설계','소개 페이지 초안 실습','결과물 확인','휴식','2부 학습 목표','정확한 수정 요청','모호한 요청과 구체적 요청','수정 범위 지정','좋은 수정 프롬프트','문구 수정 시연','디자인 수정 시연','수정 요청 실습','수정 결과 비교','휴대폰 화면 점검','오류 안내 대응','변경 파일 확인','되돌리기와 보관','개인정보 보호','링크와 공유 점검','AI 결과 검토','나만의 후속 요청','마침'];
-  var BREAKS = [17], TOTAL = TITLES.length;
+  var TITLES = ["노트북LM 마스터하기", "강의 순서", "노트북LM 개념", "소스 수집", "새 노트북 생성", "유튜브 소스 추가", "첫 소스 추가 실습", "대체 소스 추가", "대화 스타일 설정", "출처 확인", "짧은 휴식", "기능 전체 안내", "주제별 분류", "대화 내용의 소스 전환", "스튜디오 활용", "요약 생성", "핵심 질문 생성", "퀴즈 생성", "🍌 BananaNL 소개", "BananaNL 크롬 설치", "생성 결과 검토", "핵심 정리와 마침"];
+  var BREAKS = [10], TOTAL = TITLES.length;
   var SWITCH_IDS = ['swLock','swPdf','swPractice','swMaterials','swQuestions','swFeedback'];
   var SWITCH_LABELS = {lock:'청중 화면 잠금',pdf:'PDF 저장 허용',practice:'실습 사용',materials:'자료 공개',questions:'질문 받기',feedback:'후기 받기'};
   function seed(){return {session:{title:'코덱스 첫걸음과 소개 페이지 제작, 정확한 수정 요청과 안심 활용법',mode:'online',date:'2026-10-09T20:00',capacity:'',status:'준비',endedAt:null},attendees:0,currentSlide:0,switches:{lock:false,pdf:true,practice:true,materials:false,questions:false,feedback:false},practice:{step:'소개 페이지 초안',done:false,doneAt:null},timer:{minutes:10,remaining:600,endAt:null,running:false},materials:{at:'',url:'',published:false},questions:[],feedback:[]};}
