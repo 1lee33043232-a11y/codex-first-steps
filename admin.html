@@ -1,17 +1,10 @@
 <!DOCTYPE html>
-<!--
-  관리자 제어판 목업 · 두온교육 「강의 사이트 제작 노하우」 참가자 키트
-  - 서버 없음: 모든 상태를 이 브라우저 localStorage 한 칸(LS + 'admin')에만 저장
-  - slides.html 과 연결 안 됨 (슬라이드 저장 키 LS + 'slide' 와 일부러 분리)
-  - 목업 데이터: 이 브라우저 localStorage 에만 저장 · 실제 서버 연결 없음
-  - 실제 연결: 각 카드의 「서버 연결 지점」 주석을 Realtime Database/API 호출로 교체
-  - 카드 순서: 강의실 시작 → 참여 → 슬라이드 → 실습 → 자료 → 질문·후기 → 마침
--->
+<!-- 관리자 시제품 · localStorage 목업 · Firebase 및 공개 강의와 분리 · 각 카드와 저장 어댑터에 서버 연결 지점 표시 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>관리자 제어판 · 코덱스 첫걸음</title>
+<title>관리자 시제품 · 노트북LM 마스터하기</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#111111">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
@@ -124,200 +117,126 @@ td.act{text-align:right;white-space:nowrap}
 [hidden]{display:none!important}
 
 @media (prefers-reduced-motion:reduce){ .switch::after, #status{transition:none} }
-</style>
-</head>
-<body>
 
-<!-- ============ 로그인 게이트 (데모 전용 · 보안 아님) ============ -->
-<div id="gate">
-  <form id="gateForm" autocomplete="off">
-    <h1>관리자 제어판 <span class="demo-badge">데모</span></h1>
-    <p class="warn-box">시제품 전용 · 비밀번호 1234 · 실제 보안 기능 아님 · 운영 전 서버 로그인 연결 필요</p>
-    <label for="pw">비밀번호 (데모: 1234)</label>
-    <!-- 서버 연결 지점: 강사 계정 인증 후 관리자 권한 확인 -->
-    <input id="pw" type="password" inputmode="numeric" autocomplete="off" required>
-    <p id="gateErr" role="alert"></p>
-    <button type="submit" class="btn">입장</button>
-  </form>
-</div>
-
-<!-- ============ 제어판 ============ -->
-<div class="wrap" id="panel" hidden>
-  <header class="top">
-    <h1>관리자 제어판 <span class="demo-badge">목업 · 서버 없음</span></h1>
-    <div class="row">
-      <a class="btn ghost" href="slides.html" target="_blank" rel="noopener">슬라이드 새 창</a>
-      <a class="btn ghost" href="index.html" target="_blank" rel="noopener">랜딩 새 창</a>
-      <button type="button" class="btn ghost" id="resetDemo">데모 초기화</button>
-      <button type="button" class="btn ghost" id="logout">나가기</button>
-    </div>
-  </header>
-
-  <main class="grid">
-  <!-- 서버 연결 지점: session/get · session/update (강의 설정과 진행 상태) -->
-  <section class="card wide" aria-labelledby="hSession">
-    <h2 id="hSession">1. 강의실 시작 <span class="pill" id="sessionState">준비</span></h2>
-    <p class="note">수업 정보와 운영 방식을 먼저 확인하는 목업</p>
-    <div class="form-grid">
-      <label class="field">강의명<input id="courseTitle" value="코덱스 첫걸음과 소개 페이지 제작, 정확한 수정 요청과 안심 활용법"></label>
-      <label class="field">진행 방식<select id="courseMode"><option value="online">온라인 · Zoom</option><option value="inperson">대면</option></select></label>
-      <label class="field">강의 일시<input id="courseDate" type="datetime-local" value="2026-10-09T20:00"></label>
-      <label class="field">예정 인원<input id="capacity" type="number" min="0" placeholder="인원 미정"></label>
-    </div>
-    <div class="row">
-      <button type="button" class="btn" id="startSession">강의 시작</button>
-      <span class="note">100분 · 50분씩 2회 · 온라인 또는 대면 선택</span>
-    </div>
-  </section>
-
-  <!-- 서버 연결 지점: viewers/count 또는 attendance/count (이름 없이 집계 수만 저장) -->
-  <section class="card" aria-labelledby="hAttendees">
-    <h2 id="hAttendees">2. 참여 현황</h2>
-    <div class="metric-row"><div><span class="metric" id="attendeeCount">0</span><span class="note">명 참여</span></div><span class="pill" id="attendeeMode">온라인</span></div>
-    <p class="note" id="attendeeHint">목업 참여 인원 · 실시간 접속 집계 미연결</p>
-    <div class="row"><button type="button" class="btn ghost" id="attendeeMinus" aria-label="참여 인원 한 명 줄이기">− 1명</button><button type="button" class="btn ghost" id="attendeePlus">+ 1명</button></div>
-  </section>
-
-  <!-- 서버 연결 지점: decks/{deckId}/state (slide, locked, pdf, updatedAt) -->
-  <section class="card" aria-labelledby="hSlides">
-    <h2 id="hSlides">3. 슬라이드 진행</h2>
-    <div class="now" aria-live="polite"><span class="num" id="curNum">1</span><span class="tot" id="curTotal">/ 22</span><span class="ttl" id="curTitle">노트북LM 마스터하기</span></div>
-    <div class="row"><button type="button" class="btn" id="prevBtn">◀ 이전</button><button type="button" class="btn" id="nextBtn">다음 ▶</button></div>
-    <div class="jump" id="jump" role="group" aria-label="슬라이드 번호로 이동"></div>
-    <div class="switchrow"><p id="swLockDesc"><b>청중 화면 잠금</b>ON이면 청중이 강사 장을 따라감</p><div class="sw-wrap"><span class="sw-state" id="swLockState">OFF</span><div class="switch" id="swLock" role="switch" aria-checked="false" tabindex="0" aria-labelledby="swLockDesc"></div></div></div>
-    <div class="switchrow"><p id="swPdfDesc"><b>PDF 저장 허용</b>OFF면 관리자 포함 모두 저장 차단</p><div class="sw-wrap"><span class="sw-state" id="swPdfState">ON</span><div class="switch" id="swPdf" role="switch" aria-checked="true" tabindex="0" aria-labelledby="swPdfDesc"></div></div></div>
-    <p class="note">PDF 차단 정책: 강사 예외 없음 · 현재 화면은 목업 상태만 저장</p>
-  </section>
-
-  <!-- 서버 연결 지점: practice/update (실습 사용 여부, 현재 단계, 완료 여부) -->
-  <section class="card" aria-labelledby="hPractice">
-    <h2 id="hPractice">4. 실습 진행</h2>
-    <div class="switchrow"><p id="swPracticeDesc"><b>실습 사용</b>소개 페이지 제작과 수정 요청</p><div class="sw-wrap"><span class="sw-state" id="swPracticeState">ON</span><div class="switch" id="swPractice" role="switch" aria-checked="true" tabindex="0" aria-labelledby="swPracticeDesc"></div></div></div>
-    <label class="field">현재 실습 단계<select id="practiceStep"><option>소개 페이지 초안</option><option>정확한 수정 요청</option><option>안심 활용 점검</option></select></label>
-    <div class="row"><span class="tdisp" id="tDisp" role="timer" aria-live="off">10:00</span><span class="tstate" id="tState">정지</span></div>
-    <div class="row" role="group" aria-label="타이머 시간 선택"><button type="button" class="btn ghost preset" data-min="5" aria-pressed="false">5분</button><button type="button" class="btn ghost preset" data-min="10" aria-pressed="true">10분</button><button type="button" class="btn ghost preset" data-min="15" aria-pressed="false">15분</button></div>
-    <div class="row"><button type="button" class="btn" id="tStart">▶ 시작</button><button type="button" class="btn ghost" id="tPause">❚❚ 일시정지</button><button type="button" class="btn ghost" id="tReset">↺ 리셋</button></div>
-    <div class="row"><button type="button" class="btn" id="practiceDone">실습 완료 표시</button><span class="pill" id="practiceState">진행 전</span></div>
-    <p class="note">완료 상태: <span id="practiceDoneAt">기록 없음</span></p>
-  </section>
-
-  <!-- 서버 연결 지점: materials/update (자료 주소, 공개 예정 시각, 공개 여부) -->
-  <section class="card" aria-labelledby="hMaterials">
-    <h2 id="hMaterials">5. 자료 공개</h2>
-    <div class="switchrow"><p id="swMaterialsDesc"><b>자료 공개</b>OFF면 청중에게 자료 숨김</p><div class="sw-wrap"><span class="sw-state" id="swMaterialsState">OFF</span><div class="switch" id="swMaterials" role="switch" aria-checked="false" tabindex="0" aria-labelledby="swMaterialsDesc"></div></div></div>
-    <label class="field">공개 시점<input id="materialsAt" type="datetime-local"></label>
-    <label class="field">자료 링크<input id="materialsUrl" type="url" placeholder="자료 주소 입력"></label>
-    <p class="note" id="materialsState">자료 비공개 · 공개 시점 미정</p>
-    <button type="button" class="btn ghost" id="releaseMaterials">지금 공개</button>
-  </section>
-
-  <!-- 서버 연결 지점: questions/list · questions/update (익명 질문, 처리 상태, 공개 승인) -->
-  <section class="card" aria-labelledby="hQuestions">
-    <h2 id="hQuestions">6. 질문 관리 <span class="note" id="questionCount"></span></h2>
-    <div class="switchrow"><p id="swQuestionsDesc"><b>질문 받기</b>접수 상태 ON/OFF</p><div class="sw-wrap"><span class="sw-state" id="swQuestionsState">OFF</span><div class="switch" id="swQuestions" role="switch" aria-checked="false" tabindex="0" aria-labelledby="swQuestionsDesc"></div></div></div>
-    <form class="stack" id="questionForm"><label class="field">익명 질문<textarea id="questionInput" rows="2" placeholder="목업 질문 입력"></textarea></label><button type="submit" class="btn">질문 추가</button></form>
-    <div class="item-list" id="questionList"></div>
-  </section>
-
-  <!-- 서버 연결 지점: feedback/list · feedback/approve (후기 내용, 별점, 건별 공개 승인) -->
-  <section class="card" aria-labelledby="hFeedback">
-    <h2 id="hFeedback">7. 후기 관리 <span class="note" id="feedbackCount"></span></h2>
-    <div class="switchrow"><p id="swFeedbackDesc"><b>후기 받기</b>접수 상태 ON/OFF</p><div class="sw-wrap"><span class="sw-state" id="swFeedbackState">OFF</span><div class="switch" id="swFeedback" role="switch" aria-checked="false" tabindex="0" aria-labelledby="swFeedbackDesc"></div></div></div>
-    <form class="stack" id="feedbackForm"><label class="field">별점<select id="feedbackStar"><option value="5">5점</option><option value="4">4점</option><option value="3">3점</option><option value="2">2점</option><option value="1">1점</option></select></label><label class="field">익명 후기<textarea id="feedbackInput" rows="2" placeholder="목업 후기 입력"></textarea></label><button type="submit" class="btn">후기 추가</button></form>
-    <div class="item-list" id="feedbackList"></div>
-  </section>
-
-  <!-- 서버 연결 지점: session/end (종료 시각과 집계 요약 저장) -->
-  <section class="card wide" aria-labelledby="hClose">
-    <h2 id="hClose">8. 강의 마침</h2>
-    <div class="row"><button type="button" class="btn" id="endSession">강의 종료</button><button type="button" class="btn ghost" id="resetDemo">목업 상태 초기화</button><button type="button" class="btn ghost" id="logout">나가기</button></div>
-    <p class="note" id="endSummary">진행 상태와 참여 집계 요약</p>
-  </section>
-</main>
-</div>
-
-<p id="status" role="status" aria-live="polite"></p>
-
+h1,h2{text-wrap:balance}p{text-wrap:pretty}
+button,select,textarea{font:inherit}.card{min-width:0}.grid{align-items:start}
+.switch{height:44px}.switch::after{top:9px}.switch:disabled{opacity:.4;cursor:default}
+.controlbar{position:sticky;top:0;z-index:50;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.7rem;background:var(--paper);border-radius:.8rem;box-shadow:var(--shadow);margin-bottom:1rem}
+.controlbar .pill{white-space:normal}.card h2{flex-wrap:wrap}
+.item p{white-space:normal}#status{z-index:100;max-width:90vw;width:max-content;text-align:center}
+@media print{#gate,.controlbar,header.top,#status,button{display:none!important}.grid{display:block}.card{break-inside:avoid;box-shadow:none;margin-bottom:1rem}html.no-pdf #panel{display:none!important}html.no-pdf body::before{content:"PDF 저장 차단 · 관리자 포함 동일 정책";display:block;padding:2rem}}
+</style></head><body>
+<!-- 서버 연결 지점: Firebase Authentication 로그인 및 admins/{UID} 권한 확인 · 데모 로그인으로 대체 -->
+<div id="gate"><form id="gateForm"><h1>노트북LM 관리자 시제품 <span class="demo-badge">목업</span></h1><p class="warn-box">서버 없음 · 이 브라우저에만 저장 · 실제 인증·청중 동기화 미연결</p><label for="pw">데모 비밀번호: 1234</label><input id="pw" type="password" autocomplete="off" required><p id="gateErr" role="alert"></p><button class="btn" type="submit">입장</button></form></div>
+<div class="wrap" id="panel" hidden><header class="top"><h1>노트북LM 강의 관리자 <span class="demo-badge">시제품 · 서버 없음</span></h1><div class="row"><a class="btn ghost" href="index.html" target="_blank" rel="noopener">강의 홈</a><button class="btn ghost" type="button" id="logout">로그아웃</button></div></header>
+<p class="note">10명 내외 · 60분 실습 · 수업 방식·자료 공개 시점·질문·후기 사용 여부 미정</p>
+<nav class="controlbar" aria-label="고정 수업 제어"><button class="btn" type="button" id="stickyPrev">◀ 이전</button><span class="pill" id="stickySlide" aria-live="polite">1 / 22</span><button class="btn" type="button" id="stickyNext">다음 ▶</button><span class="pill" id="stickyLock">잠금 OFF</span><span class="pill" id="stickyPdf">PDF ON</span><a class="btn ghost" href="#hCard5">목차 이동</a></nav><main class="grid">
+<!-- 서버 연결 지점: Firebase Authentication 로그인·로그아웃 및 admins/{UID} 권한 확인 -->
+<section class="card" aria-labelledby="hCard1"><h2 id="hCard1">1. 강사 로그인</h2><p>목업 강사 · 로그인 상태 <span class="pill">데모 로그인</span></p><p class="note">비밀번호 1234 · 실제 인증·권한 기능 아님</p><button type="button" class="btn ghost" id="logoutCard">로그아웃</button></section>
+<!-- 서버 연결 지점: sessions/{deckId}: title, mode, date, capacity, duration / viewers 집계 -->
+<section class="card wide" aria-labelledby="hCard2"><h2 id="hCard2">2. 수업 준비</h2><div class="form-grid"><label class="field">강의명<input id="courseTitle"></label><label class="field">수업 방식<select id="courseMode"><option value="unknown">미정</option><option value="online">온라인</option><option value="inperson">대면</option></select></label><label class="field">일시 · 추후 안내<input id="courseDate" type="datetime-local"></label><label class="field">예상 인원<input id="capacity" type="number" min="1" max="100" value="10"></label></div><p>60분 실습 강의 · AI연구소 이연희 강사</p><p>목업 접속: <b id="attendeeCount">0</b>명</p><div class="row"><button type="button" class="btn ghost" id="attendeeMinus">− 1명</button><button type="button" class="btn ghost" id="attendeePlus">+ 1명</button><button type="button" class="btn ghost" id="copyAudience">청중 주소 복사</button><a class="btn ghost" href="slides.html" target="_blank" rel="noopener">청중 화면 열기</a></div><p class="note">목업 접속 인원 · 청중 주소는 기존 강의 연결 · 실시간 동기화 미연결</p></section>
+<!-- 서버 연결 지점: materials/{deckId}/{자료ID}: path, timing, published, releasedAt -->
+<section class="card" aria-labelledby="hCard3"><h2 id="hCard3">3. 자료 공개</h2><label class="field">공개 시점<select id="materialsTiming"><option value="unknown">미정</option><option value="before">수업 전</option><option value="during">수업 중</option><option value="after">수업 후</option><option value="manual">강사 수동 공개</option></select></label><div class="switchrow"><p id="swMaterialsPdfDesc"><b>PDF 자료 공개</b>PDF 예시 공개 상태</p><div class="sw-wrap"><span class="sw-state" id="swMaterialsPdfState">OFF</span><button type="button" class="switch" id="swMaterialsPdf" role="switch" aria-checked="false" aria-labelledby="swMaterialsPdfDesc"></button></div></div><div class="switchrow"><p id="swMaterialsVideoDesc"><b>동영상 공개</b>설명 영상 링크 공개 상태</p><div class="sw-wrap"><span class="sw-state" id="swMaterialsVideoState">OFF</span><button type="button" class="switch" id="swMaterialsVideo" role="switch" aria-checked="false" aria-labelledby="swMaterialsVideoDesc"></button></div></div><div class="switchrow"><p id="swMaterialsAudioDesc"><b>오디오 공개</b>첨부 음성 공개 상태</p><div class="sw-wrap"><span class="sw-state" id="swMaterialsAudioState">OFF</span><button type="button" class="switch" id="swMaterialsAudio" role="switch" aria-checked="false" aria-labelledby="swMaterialsAudioDesc"></button></div></div><div class="switchrow"><p id="swMaterialsImageDesc"><b>이미지 공개</b>기능 안내 이미지 공개 상태</p><div class="sw-wrap"><span class="sw-state" id="swMaterialsImageState">OFF</span><button type="button" class="switch" id="swMaterialsImage" role="switch" aria-checked="false" aria-labelledby="swMaterialsImageDesc"></button></div></div><button type="button" class="btn ghost" id="previewMaterials">자료 공개 상태 확인</button><p class="note" id="materialPreview">공개 자료 없음</p><p class="note">공개 시점 기록용 · 자동 예약 미연결 · 공개 사이트 자료에는 영향 없음</p></section>
+<!-- 서버 연결 지점: decks/{deckId}/state: slide, locked, updatedAt / session.startedAt -->
+<section class="card" aria-labelledby="hCard4"><h2 id="hCard4">4. 수업 시작</h2><span class="pill" id="sessionState">준비</span><div class="row"><button type="button" class="btn" id="startSession">수업 시작</button><button type="button" class="btn ghost" id="gatherAudience">현재 장으로 모으기</button></div><div class="switchrow"><p id="swLockDesc"><b>청중 화면 잠금</b>ON: 강사 따라가기 · OFF: 자유 이동</p><div class="sw-wrap"><span class="sw-state" id="swLockState">OFF</span><button type="button" class="switch" id="swLock" role="switch" aria-checked="false" aria-labelledby="swLockDesc"></button></div></div><p class="note" id="gatherState">목업 동기화 대기</p><p class="note">실제 청중 화면 제어 없음 · 서버 연결 후 적용</p></section>
+<!-- 서버 연결 지점: decks/{deckId}/state.slide · 인증된 관리자만 서버 쓰기 -->
+<section class="card wide" aria-labelledby="hCard5"><h2 id="hCard5">5. 슬라이드 진행</h2><div class="now" aria-live="polite"><span class="num" id="curNum">1</span><span class="tot" id="curTotal">/ 22</span><span class="ttl" id="curTitle"></span></div><div class="row"><button type="button" class="btn" id="prevBtn">◀ 이전</button><button type="button" class="btn" id="nextBtn">다음 ▶</button></div><div class="jump" id="jump" role="group" aria-label="슬라이드 번호로 이동"></div><p class="note">목업 슬라이드 번호만 저장 · 기존 웹슬라이드와 분리</p></section>
+<!-- 서버 연결 지점: practice/{deckId}: step, task, criteria, status, timer / state.locked -->
+<section class="card" aria-labelledby="hCard6"><h2 id="hCard6">6. 실습 진행</h2><div class="switchrow"><p id="swPracticeDesc"><b>실습 사용</b>직접 자료 추가·질문·요약·퀴즈 제작</p><div class="sw-wrap"><span class="sw-state" id="swPracticeState">ON</span><button type="button" class="switch" id="swPractice" role="switch" aria-checked="true" aria-labelledby="swPracticeDesc"></button></div></div><label class="field">실습 단계<select id="practiceStep"><option value="source">소스 추가와 첫 질문</option><option value="summary">요약 생성</option><option value="questions">핵심 질문 생성</option><option value="quiz">퀴즈 생성</option></select></label><p id="practiceTask"></p><p id="practiceCriteria"></p><div class="row"><span class="tdisp" id="tDisp" role="timer">5:00</span><span class="tstate" id="tState">정지</span></div><div class="row" role="group" aria-label="실습 시간 선택"><button class="btn ghost preset" type="button" data-min="3">3분</button><button class="btn ghost preset" type="button" data-min="5">5분</button><button class="btn ghost preset" type="button" data-min="7">7분</button></div><div class="row"><button type="button" class="btn" id="tStart">실습 시작·재개</button><button type="button" class="btn ghost" id="tPause">일시정지</button><button type="button" class="btn ghost" id="practiceDone">실습 종료</button></div><button type="button" class="btn ghost" id="practiceFree">실습 자유 이동</button><p class="note" id="practiceState">진행 전</p></section>
+<!-- 서버 연결 지점: practice/{deckId}/participants/{익명ID}: done, help, handledAt -->
+<section class="card" aria-labelledby="hCard7"><h2 id="hCard7">7. 실습 현황</h2><p id="practiceCount">완료 0 / 10명 · 도움 요청 0명</p><label class="field">목업 참가자<select id="participantSelect"></select></label><div class="row"><button type="button" class="btn ghost" id="participantDone">완료 표시</button><button type="button" class="btn ghost" id="participantHelp">도움 요청</button><button type="button" class="btn ghost" id="participantHandled">도움 처리 완료</button></div><div class="item-list" id="participantList"></div><p class="note">익명 참가자 10명 · 이름·연락처 수집 없음</p></section>
+<!-- 서버 연결 지점: break/{deckId}: running, endAt, remaining, returnSlide -->
+<section class="card" aria-labelledby="hCard8"><h2 id="hCard8">8. 짧은 휴식</h2><p>2분 휴식 · 휴식 장: 11장</p><div class="row"><span class="tdisp" id="breakDisp" role="timer">2:00</span><span class="tstate" id="breakState">정지</span></div><div class="row"><button type="button" class="btn" id="breakStart">휴식 시작·재개</button><button type="button" class="btn ghost" id="breakPause">일시정지</button><button type="button" class="btn ghost" id="breakReturn">수업 재개</button></div></section>
+<!-- 서버 연결 지점: questions/{deckId}/{ID}: text, answered, createdAt, approved / 공개 데이터에서 신원 제외 -->
+<section class="card" aria-labelledby="hCard9"><h2 id="hCard9">9. 질문 확인</h2><div class="switchrow"><p id="swQuestionsDesc"><b>질문 접수</b>사용 여부 미정 · OFF 기본값</p><div class="sw-wrap"><span class="sw-state" id="swQuestionsState">OFF</span><button type="button" class="switch" id="swQuestions" role="switch" aria-checked="false" aria-labelledby="swQuestionsDesc"></button></div></div><label class="field">질문 보기<select id="questionFilter"><option value="all">전체</option><option value="pending">미답변</option></select></label><form class="stack" id="questionForm"><label class="field">목업 익명 질문<textarea id="questionInput" required maxlength="1000"></textarea></label><button type="submit" class="btn">질문 추가</button></form><div class="item-list" id="questionList"></div></section>
+<!-- 서버 연결 지점: state.pdf / materials.published / 질문·후기 공개 projection -->
+<section class="card" aria-labelledby="hCard10"><h2 id="hCard10">10. 결과 검토·자료 배포</h2><p>원문 일치 → 빠진 핵심 → 정답 근거 → 쉬운 표현 점검</p><div class="switchrow"><p id="swPdfDesc"><b>PDF 저장 허용</b>OFF: 관리자 포함 인쇄·PDF 예시 열기 차단</p><div class="sw-wrap"><span class="sw-state" id="swPdfState">ON</span><button type="button" class="switch" id="swPdf" role="switch" aria-checked="true" aria-labelledby="swPdfDesc"></button></div></div><div class="row"><button type="button" class="btn ghost" id="publishAll">자료 전체 공개</button><button type="button" class="btn ghost" id="pdfExample">PDF 예시 열기</button><button type="button" class="btn ghost" id="printAdmin">현재 화면 PDF 저장</button><button type="button" class="btn ghost" id="publicExport">승인된 공개 데이터 받기</button></div><p class="note">PDF 정책: 관리자 예외 없음 · 공개 데이터: 건별 승인 내용만 포함</p><p class="note">정적 자료의 실제 다운로드 권한 제어는 서버 연결 후 적용</p></section>
+<!-- 서버 연결 지점: feedback/{deckId}/{ID}: text, star, createdAt, approved / 건별 공개 승인 -->
+<section class="card" aria-labelledby="hCard11"><h2 id="hCard11">11. 후기 수집</h2><div class="switchrow"><p id="swFeedbackDesc"><b>후기 접수</b>사용 여부 미정 · OFF 기본값</p><div class="sw-wrap"><span class="sw-state" id="swFeedbackState">OFF</span><button type="button" class="switch" id="swFeedback" role="switch" aria-checked="false" aria-labelledby="swFeedbackDesc"></button></div></div><form class="stack" id="feedbackForm"><label class="field">별점<select id="feedbackStar"><option value="5">5점</option><option value="4">4점</option><option value="3">3점</option><option value="2">2점</option><option value="1">1점</option></select></label><label class="field">목업 익명 후기<textarea id="feedbackInput" required maxlength="1000"></textarea></label><button type="submit" class="btn">후기 추가</button></form><div class="item-list" id="feedbackList"></div></section>
+<!-- 서버 연결 지점: session.endedAt / state.locked, pdf / audit/{deckId}: action, at -->
+<section class="card wide" aria-labelledby="hCard12"><h2 id="hCard12">12. 수업 종료</h2><p id="endSummary">수업 종료 전</p><div class="switchrow"><p id="swReviewDesc"><b>복습 자유 열람</b>ON: 청중 잠금 OFF · PDF 정책은 별도 유지</p><div class="sw-wrap"><span class="sw-state" id="swReviewState">OFF</span><button type="button" class="switch" id="swReview" role="switch" aria-checked="false" aria-labelledby="swReviewDesc"></button></div></div><div class="row"><button type="button" class="btn" id="endSession">수업 종료</button><button type="button" class="btn ghost" id="viewRecords">기록 보기</button><button type="button" class="btn ghost" id="resetDemo">목업 초기화</button></div><div id="recordList" class="item-list" hidden></div></section></main></div><p id="status" role="status" aria-live="polite"></p>
 <script>
 (function(){
-  /* 목업 데이터: 이 브라우저 localStorage 에만 저장 · 별도 서버 연결 없음 */
   var LS = 'codex100_';
-  var STATE_KEY = LS + 'admin';
-  var AUTH_KEY = LS + 'admin_ok';
-  var DEMO_PW = '1234';
+  var STATE_KEY = LS + 'admin_v2', AUTH_KEY = LS + 'admin_ok';
   var TITLES = ["노트북LM 마스터하기", "강의 순서", "노트북LM 개념", "소스 수집", "새 노트북 생성", "유튜브 소스 추가", "첫 소스 추가 실습", "대체 소스 추가", "대화 스타일 설정", "출처 확인", "짧은 휴식", "기능 전체 안내", "주제별 분류", "대화 내용의 소스 전환", "스튜디오 활용", "요약 생성", "핵심 질문 생성", "퀴즈 생성", "🍌 BananaNL 소개", "BananaNL 크롬 설치", "생성 결과 검토", "핵심 정리와 마침"];
   var BREAKS = [10], TOTAL = TITLES.length;
-  var SWITCH_IDS = ['swLock','swPdf','swPractice','swMaterials','swQuestions','swFeedback'];
-  var SWITCH_LABELS = {lock:'청중 화면 잠금',pdf:'PDF 저장 허용',practice:'실습 사용',materials:'자료 공개',questions:'질문 받기',feedback:'후기 받기'};
-  function seed(){return {session:{title:'코덱스 첫걸음과 소개 페이지 제작, 정확한 수정 요청과 안심 활용법',mode:'online',date:'2026-10-09T20:00',capacity:'',status:'준비',endedAt:null},attendees:0,currentSlide:0,switches:{lock:false,pdf:true,practice:true,materials:false,questions:false,feedback:false},practice:{step:'소개 페이지 초안',done:false,doneAt:null},timer:{minutes:10,remaining:600,endAt:null,running:false},materials:{at:'',url:'',published:false},questions:[],feedback:[]};}
-  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
-  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){/* 저장 제한 환경 · 현재 화면에서만 동작 */}}
-  function load(){var raw=lsGet(STATE_KEY);if(!raw)return seed();try{var saved=JSON.parse(raw),base=seed();Object.keys(base).forEach(function(k){if(saved[k]===undefined)saved[k]=base[k];});return saved;}catch(e){return seed();}}
-  var S=load();
-  /* 실제 서버 연결 지점: persist() 자리에 인증된 API/Firebase 저장 요청을 연결하고 응답 데이터로 S 갱신 */
-  function persist(){lsSet(STATE_KEY,JSON.stringify(S));}
-  var statusEl=document.getElementById('status');
-  function say(text){statusEl.textContent=text;statusEl.classList.add('show');clearTimeout(say.t);say.t=setTimeout(function(){statusEl.classList.remove('show');},1800);}
+  var $ = function(id){return document.getElementById(id);};
+  var tasks={source:['유튜브 소스 추가 → 첫 질문 입력','소스 목록 표시 + 첫 질문 입력'],summary:['핵심 내용 5가지 요약','요약 한 항목과 원문 비교'],questions:['핵심 질문 5개 생성','질문 5개 + 직접 답변 1개'],quiz:['객관식 퀴즈 5개 생성·풀이','5문항 확인 + 한 문항의 정답 근거 확인']};
+  // 모든 스위치 저장 키: 요소 id에서 생성 · 별도 순서 기반 매핑 금지
   function switchKey(id){return id.replace(/^sw/,'').toLowerCase();}
-  function switchValue(id){return !!S.switches[switchKey(id)];}
-  function setSwitch(id,value){S.switches[switchKey(id)]=!!value;persist();render();}
-  function modeText(){return S.session.mode==='online'?'온라인 · Zoom':'대면';}
-  function setSessionState(value){S.session.status=value;if(value!=='진행 중')S.session.endedAt=new Date().toISOString();else S.session.endedAt=null;persist();render();}
-  var gate=document.getElementById('gate'),panel=document.getElementById('panel');
-  function enterPanel(){gate.hidden=true;panel.hidden=false;render();}
-  document.getElementById('gateForm').addEventListener('submit',function(e){e.preventDefault();if(document.getElementById('pw').value===DEMO_PW){try{sessionStorage.setItem(AUTH_KEY,'1');}catch(err){}enterPanel();}else document.getElementById('gateErr').textContent='비밀번호 불일치';});
-  document.getElementById('logout').addEventListener('click',function(){try{sessionStorage.removeItem(AUTH_KEY);}catch(e){}panel.hidden=true;gate.hidden=false;document.getElementById('pw').value='';});
-  document.getElementById('resetDemo').addEventListener('click',function(){if(!confirm('이 브라우저에 저장된 목업 상태를 초기화할까요?'))return;stopTick();S=seed();persist();render();say('목업 초기화 완료');});
-  var jump=document.getElementById('jump');
-  TITLES.forEach(function(title,i){var b=document.createElement('button');b.type='button';b.textContent=i+1;b.setAttribute('aria-label',(i+1)+'. '+title);b.title=(i+1)+'. '+title;if(BREAKS.indexOf(i)!==-1)b.classList.add('brk');b.addEventListener('click',function(){setSlide(i);});jump.appendChild(b);});
-  function setSlide(i){S.currentSlide=Math.max(0,Math.min(TOTAL-1,i));persist();render();say((S.currentSlide+1)+'장 · '+TITLES[S.currentSlide]);}
-  document.getElementById('prevBtn').addEventListener('click',function(){setSlide(S.currentSlide-1);});
-  document.getElementById('nextBtn').addEventListener('click',function(){setSlide(S.currentSlide+1);});
-  SWITCH_IDS.forEach(function(id){var el=document.getElementById(id);function toggle(){var next=!switchValue(id);setSwitch(id,next);say(SWITCH_LABELS[switchKey(id)]+' '+(next?'ON':'OFF'));}el.addEventListener('click',toggle);el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});});
-  /* PDF OFF 정책에는 강사 예외가 없음 · 실제 연결 시 청중/강사 화면 모두 같은 정책 값 적용 */
-  var sessionFields={courseTitle:'title',courseMode:'mode',courseDate:'date',capacity:'capacity'};
-  Object.keys(sessionFields).forEach(function(id){var el=document.getElementById(id),key=sessionFields[id];el.value=S.session[key]||'';el.addEventListener('change',function(){S.session[key]=el.value;persist();render();});});
-  document.getElementById('startSession').addEventListener('click',function(){setSessionState('진행 중');say('강의 시작 기록');});
-  document.getElementById('endSession').addEventListener('click',function(){setSessionState('종료');say('강의 종료 기록');});
-  document.getElementById('attendeePlus').addEventListener('click',function(){S.attendees=Math.max(0,(Number(S.attendees)||0)+1);persist();render();});
-  document.getElementById('attendeeMinus').addEventListener('click',function(){S.attendees=Math.max(0,(Number(S.attendees)||0)-1);persist();render();});
-  document.getElementById('practiceStep').addEventListener('change',function(e){S.practice.step=e.target.value;S.practice.done=false;S.practice.doneAt=null;persist();render();});
-  document.getElementById('practiceDone').addEventListener('click',function(){S.practice.done=true;S.practice.doneAt=new Date().toLocaleString('ko-KR');persist();render();say('실습 완료 기록');});
-  document.getElementById('materialsAt').addEventListener('change',function(e){S.materials.at=e.target.value;persist();render();});
-  document.getElementById('materialsUrl').addEventListener('change',function(e){S.materials.url=e.target.value.trim();persist();render();});
-  document.getElementById('releaseMaterials').addEventListener('click',function(){setSwitch('swMaterials',true);say('자료 공개 상태 ON');});
-  document.getElementById('questionForm').addEventListener('submit',function(e){e.preventDefault();var input=document.getElementById('questionInput'),text=input.value.trim();if(!switchValue('swQuestions')){say('질문 받기 OFF 상태');return;}if(!text){input.focus();say('질문 내용 입력 필요');return;}S.questions.push({id:'q'+Date.now().toString(36),text:text,answered:false,approved:false,createdAt:new Date().toISOString()});input.value='';persist();render();say('익명 질문 추가');});
-  document.getElementById('feedbackForm').addEventListener('submit',function(e){e.preventDefault();var input=document.getElementById('feedbackInput'),text=input.value.trim();if(!switchValue('swFeedback')){say('후기 받기 OFF 상태');return;}if(!text){input.focus();say('후기 내용 입력 필요');return;}S.feedback.push({id:'f'+Date.now().toString(36),star:Number(document.getElementById('feedbackStar').value),text:text,approved:false,createdAt:new Date().toISOString()});input.value='';persist();render();say('익명 후기 추가');});
-  function renderItems(type){var host=document.getElementById(type==='questions'?'questionList':'feedbackList'),items=S[type];host.textContent='';items.forEach(function(item){var row=document.createElement('article');row.className='item';var body=document.createElement('p');body.textContent=(type==='feedback'?'★'.repeat(item.star)+'  ':'')+item.text;var meta=document.createElement('span');meta.className='note';meta.textContent=(type==='feedback'?(item.answered?'검토 완료':'검토 대기'):(item.answered?'답변 완료':'미처리'))+' · '+(item.approved?'공개 승인':'비공개');var actions=document.createElement('div');actions.className='row';var status=document.createElement('button');status.type='button';status.className='btn ghost';status.textContent=type==='feedback'?(item.answered?'검토 상태 해제':'검토 완료'):(item.answered?'답변 완료 취소':'답변 완료');status.addEventListener('click',function(){item.answered=!item.answered;persist();render();});var approval=document.createElement('div');approval.className='switch';approval.id='sw'+(type==='feedback'?'Review_':'Question_')+item.id;var approvalKey=switchKey(approval.id);if(S.switches[approvalKey]===undefined)S.switches[approvalKey]=!!item.approved;item.approved=!!S.switches[approvalKey];approval.setAttribute('role','switch');approval.tabIndex=0;approval.setAttribute('aria-checked',String(item.approved));approval.setAttribute('aria-label',(type==='feedback'?'후기':'질문')+' 공개 승인');var pub=document.createElement('span');pub.className='sw-state';pub.textContent=item.approved?'공개':'숨김';function toggle(){S.switches[approvalKey]=!S.switches[approvalKey];item.approved=S.switches[approvalKey];persist();render();}approval.addEventListener('click',toggle);approval.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});actions.appendChild(status);actions.appendChild(pub);actions.appendChild(approval);row.appendChild(body);row.appendChild(meta);row.appendChild(actions);host.appendChild(row);});if(!items.length){host.appendChild(makeEmpty(type==='questions'?'접수된 질문 없음':'접수된 후기 없음'));}document.getElementById(type==='questions'?'questionCount':'feedbackCount').textContent=items.length+'건';}
-  function makeEmpty(text){var p=document.createElement('p');p.className='note empty';p.textContent=text;return p;}
-  var tDisp=document.getElementById('tDisp'),tState=document.getElementById('tState'),tickId=null;
-  function tRemaining(){return S.timer.running?Math.round((S.timer.endAt-Date.now())/1000):S.timer.remaining;}
-  function fmt(sec){var neg=sec<0,a=Math.abs(sec),m=Math.floor(a/60),s=a%60;return(neg?'+':'')+m+':'+(s<10?'0':'')+s;}
-  function renderTimer(){var sec=tRemaining();tDisp.textContent=fmt(sec);tDisp.classList.toggle('warn',sec<=60);tState.textContent=S.timer.running?'진행 중':(sec<=0?'종료':'정지');}
-  function stopTick(){if(tickId)clearInterval(tickId);tickId=null;}
-  function startTick(){stopTick();tickId=setInterval(function(){renderTimer();if(tRemaining()<=0){S.timer.remaining=0;S.timer.running=false;S.timer.endAt=null;persist();stopTick();render();}},250);}
-  document.querySelectorAll('.preset').forEach(function(b){b.addEventListener('click',function(){var min=Number(b.dataset.min);S.timer={minutes:min,remaining:min*60,endAt:null,running:false};persist();render();});});
-  document.getElementById('tStart').addEventListener('click',function(){if(S.timer.running)return;S.timer.endAt=Date.now()+S.timer.remaining*1000;S.timer.running=true;persist();startTick();render();});
-  document.getElementById('tPause').addEventListener('click',function(){if(!S.timer.running)return;S.timer.remaining=tRemaining();S.timer.running=false;S.timer.endAt=null;persist();stopTick();render();});
-  document.getElementById('tReset').addEventListener('click',function(){S.timer.remaining=S.timer.minutes*60;S.timer.running=false;S.timer.endAt=null;persist();stopTick();render();});
+  function seed(){var switches={};document.querySelectorAll('button.switch').forEach(function(el){switches[switchKey(el.id)]=el.getAttribute('aria-checked')==='true';});return {version:2,session:{title:'노트북LM 마스터하기: 내 자료로 만드는 AI 학습 도우미',mode:'unknown',date:'',capacity:10,duration:60,status:'준비',startedAt:null,endedAt:null},attendees:0,currentSlide:0,switches:switches,materials:{timing:'unknown',paths:{pdf:'assets/notebooklm/learning-example.pdf',video:'https://youtu.be/04t6i8PzyzE',audio:'assets/notebooklm/audio-example.m4a',image:'assets/notebooklm/feature-guide.png'}},practice:{step:'source',status:'진행 전'},timer:{minutes:5,remaining:300,endAt:null,running:false},breakTimer:{minutes:2,remaining:120,endAt:null,running:false,returnSlide:0,active:false},participants:Array.from({length:10},function(_,i){return {id:'p'+(i+1),done:false,help:false,handledAt:null};}),questions:[],feedback:[],records:[]};}
+  function read(){try{var data=JSON.parse(localStorage.getItem(STATE_KEY));return data&&data.version===2?Object.assign(seed(),data):seed();}catch(e){return seed();}}
+  var S=read();S.currentSlide=Math.max(0,Math.min(TOTAL-1,Number(S.currentSlide)||0));
+  // 서버 연결 지점: 인증된 서버 API/Firebase 조회·쓰기 어댑터로 대체 · 모든 정책은 서버에서도 검증
+  function persist(){try{localStorage.setItem(STATE_KEY,JSON.stringify(S));}catch(e){say('저장 불가 · 현재 화면에서만 동작');}}
+  function record(action){S.records.push({action:action,at:new Date().toISOString()});S.records=S.records.slice(-100);}
+  function update(action){record(action);persist();render();}
+  function say(text){$('status').textContent=text;$('status').classList.add('show');clearTimeout(say.t);say.t=setTimeout(function(){$('status').classList.remove('show');},2200);}
+  function on(id,fn){$(id).addEventListener('click',fn);}
+  function isOn(id){return S.switches[switchKey(id)]===true;}
+  function setSwitch(id,value){S.switches[switchKey(id)]=!!value;if(id==='swReview')S.switches[switchKey('swLock')]=!value;if(id==='swLock')S.switches[switchKey('swReview')]=!value;}
+  function bindSwitch(el){el.addEventListener('click',function(){setSwitch(el.id,!isOn(el.id));update($(el.id+'Desc')?$(el.id+'Desc').querySelector('b').textContent+' '+(isOn(el.id)?'ON':'OFF'):'공개 승인 상태 변경');});}
+  document.querySelectorAll('button.switch').forEach(bindSwitch);
+  $('gateForm').addEventListener('submit',function(e){e.preventDefault();if($('pw').value!=='1234'){$('gateErr').textContent='비밀번호 불일치';return;}try{sessionStorage.setItem(AUTH_KEY,'1');}catch(err){}$('pw').value='';$('gate').hidden=true;$('panel').hidden=false;render();$('logout').focus();});
+  function logout(){try{sessionStorage.removeItem(AUTH_KEY);}catch(e){}$('panel').hidden=true;$('gate').hidden=false;$('gateErr').textContent='';$('pw').focus();}
+  on('logout',logout);on('logoutCard',logout);
+  function slide(n){S.currentSlide=Math.max(0,Math.min(TOTAL-1,n));update('슬라이드 '+(S.currentSlide+1)+'장');}
+  ['prevBtn','stickyPrev'].forEach(function(id){on(id,function(){slide(S.currentSlide-1);});});['nextBtn','stickyNext'].forEach(function(id){on(id,function(){slide(S.currentSlide+1);});});
+  TITLES.forEach(function(title,i){var b=document.createElement('button');b.type='button';b.textContent=i+1;b.setAttribute('aria-label',(i+1)+'. '+title);if(BREAKS.includes(i))b.className='brk';b.addEventListener('click',function(){slide(i);});$('jump').appendChild(b);});
+  var fields={courseTitle:'title',courseMode:'mode',courseDate:'date',capacity:'capacity'};
+  Object.keys(fields).forEach(function(id){$(id).addEventListener('change',function(){var v=$(id).value;if(id==='capacity')v=Math.max(1,Math.min(100,Number(v)||10));S.session[fields[id]]=v;update('수업 준비 변경');});});
+  on('attendeePlus',function(){S.attendees++;update('목업 접속 인원 증가');});on('attendeeMinus',function(){S.attendees=Math.max(0,S.attendees-1);update('목업 접속 인원 감소');});
+  on('copyAudience',async function(){try{await navigator.clipboard.writeText(new URL('slides.html',location.href).href);say('청중 주소 복사 완료');}catch(e){say('주소 복사 불가 · 슬라이드 링크 활용');}});
+  $('materialsTiming').addEventListener('change',function(){S.materials.timing=$('materialsTiming').value;update('자료 공개 시점 변경');});
+  var materialIds=['swMaterialsPdf','swMaterialsVideo','swMaterialsAudio','swMaterialsImage'];
+  function materialText(){return materialIds.filter(isOn).map(function(id){return $(id+'Desc').querySelector('b').textContent;}).join(' · ')||'공개 자료 없음';}
+  on('previewMaterials',function(){$('materialPreview').textContent=materialText();say('목업 공개 상태 확인');});
+  on('publishAll',function(){materialIds.forEach(function(id){setSwitch(id,true);});update('자료 전체 공개');});
+  on('startSession',function(){S.session.status='진행 중';S.session.startedAt=new Date().toISOString();S.session.endedAt=null;setSwitch('swLock',true);update('수업 시작');});
+  on('gatherAudience',function(){setSwitch('swLock',true);S.gatheredAt=new Date().toISOString();update('현재 장으로 모으기');});
+  function remaining(timer){return timer.running?Math.max(0,Math.ceil((timer.endAt-Date.now())/1000)):Math.max(0,timer.remaining);}
+  function pause(timer){timer.remaining=remaining(timer);timer.running=false;timer.endAt=null;}
+  function start(timer){if(timer.running)return;if(!timer.remaining)timer.remaining=timer.minutes*60;timer.endAt=Date.now()+timer.remaining*1000;timer.running=true;}
+  function fmt(sec){return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');}
+  $('practiceStep').addEventListener('change',function(){S.practice.step=$('practiceStep').value;S.practice.status='진행 전';pause(S.timer);update('실습 단계 변경');});
+  document.querySelectorAll('.preset').forEach(function(b){b.addEventListener('click',function(){S.timer={minutes:Number(b.dataset.min),remaining:Number(b.dataset.min)*60,endAt:null,running:false};update('실습 시간 선택');});});
+  on('tStart',function(){if(!isOn('swPractice'))return;start(S.timer);S.practice.status='진행 중';update('실습 시작·재개');});on('tPause',function(){pause(S.timer);S.practice.status='일시정지';update('실습 일시정지');});on('practiceDone',function(){pause(S.timer);S.practice.status='완료';update('실습 종료');});on('practiceFree',function(){setSwitch('swLock',false);update('실습 자유 이동');});
+  S.participants.forEach(function(p,i){var o=document.createElement('option');o.value=p.id;o.textContent='참가자 '+String(i+1).padStart(2,'0');$('participantSelect').appendChild(o);});
+  function progress(p){if(!p.steps)p.steps={};if(!p.steps[S.practice.step])p.steps[S.practice.step]={done:false,help:false,handledAt:null};return p.steps[S.practice.step];}
+  function participant(){return progress(S.participants.find(function(p){return p.id===$('participantSelect').value;}));}
+  on('participantDone',function(){participant().done=!participant().done;update('익명 참가자 완료 상태 변경');});on('participantHelp',function(){participant().help=true;participant().handledAt=null;update('도움 요청');});on('participantHandled',function(){participant().help=false;participant().handledAt=new Date().toISOString();update('도움 처리 완료');});
+  on('breakStart',function(){if(!S.breakTimer.active){S.breakTimer.returnSlide=S.currentSlide;S.breakTimer.active=true;S.breakTimer.remaining=120;}start(S.breakTimer);S.currentSlide=BREAKS[0];update('휴식 시작·재개');});on('breakPause',function(){pause(S.breakTimer);update('휴식 일시정지');});on('breakReturn',function(){if(!S.breakTimer.active)return;pause(S.breakTimer);S.breakTimer.active=false;S.currentSlide=S.breakTimer.returnSlide;update('수업 재개');});
+  function addItem(type,form,input,switchId){$(form).addEventListener('submit',function(e){e.preventDefault();if(!isOn(switchId)){say('접수 OFF 상태');return;}var text=$(input).value.trim();if(!text)return;var id=type+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);var item={id:id,text:text.slice(0,1000),answered:false,createdAt:new Date().toISOString()};if(type==='feedback')item.star=Number($('feedbackStar').value);S[type].push(item);$(input).value='';update(type==='questions'?'익명 질문 추가':'익명 후기 추가');});}
+  addItem('questions','questionForm','questionInput','swQuestions');addItem('feedback','feedbackForm','feedbackInput','swFeedback');$('questionFilter').addEventListener('change',render);
+  function make(tag,cls,text){var el=document.createElement(tag);el.className=cls;if(text!==undefined)el.textContent=text;return el;}
+  function itemSwitchId(type,item){return 'swApproval_'+type+'_'+item.id;}
+  function renderItems(type){var host=$(type==='questions'?'questionList':'feedbackList');host.textContent='';var items=S[type].filter(function(item){return type!=='questions'||$('questionFilter').value!=='pending'||!item.answered;});items.forEach(function(item){var row=make('article','item'),text=make('p','',item.text),meta=make('p','note',(type==='feedback'?item.star+'점':'질문')+' · '+(item.answered?'처리 완료':'처리 대기')),actions=make('div','row');if(type==='questions'){var done=make('button','btn ghost',item.answered?'답변 완료 취소':'답변 완료');done.type='button';done.addEventListener('click',function(){item.answered=!item.answered;update('질문 답변 상태 변경');});actions.appendChild(done);}var id=itemSwitchId(type,item),label=make('span','note','공개 승인'),state=make('span','sw-state',isOn(id)?'ON':'OFF'),approval=make('button','switch');state.id=id+'State';approval.id=id;approval.type='button';approval.setAttribute('role','switch');approval.setAttribute('aria-label',(type==='questions'?'질문':'후기')+' 공개 승인: '+item.text.slice(0,30));approval.setAttribute('aria-checked',String(isOn(id)));bindSwitch(approval);actions.append(label,state,approval);row.append(text,meta,actions);host.appendChild(row);});if(!items.length)host.appendChild(make('p','note','표시할 항목 없음'));}
+  // 공개 projection: 이름·UID·익명 참가자 ID·접수 시각 제외 · 승인 항목만 내용으로 구성
+  function publicData(){return {questions:S.questions.filter(function(x){return isOn(itemSwitchId('questions',x));}).map(function(x){return {text:x.text,answered:x.answered};}),feedback:S.feedback.filter(function(x){return isOn(itemSwitchId('feedback',x));}).map(function(x){return {text:x.text,star:x.star};})};}
+  on('publicExport',function(){var blob=new Blob([JSON.stringify(publicData(),null,2)],{type:'application/json;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='노트북LM_공개목업.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1000);say('승인된 공개 데이터 받기 완료');});
+  // 정책 스위치: 관리자 예외 없음 · 운영 시 모든 저장·다운로드 요청에도 서버 검증 적용
+  var nativePrint=window.print.bind(window);window.print=function(){if(!isOn('swPdf')){say('PDF 저장 OFF · 관리자 포함 차단');return;}nativePrint();};
+  on('printAdmin',function(){window.print();});on('pdfExample',function(){if(!isOn('swPdf'))return;window.open(S.materials.paths.pdf,'_blank','noopener');});
+  document.addEventListener('keydown',function(e){if((e.key.toLowerCase()==='p')&&!e.target.closest('input,textarea,select')){e.preventDefault();window.print();}});
+  on('endSession',function(){pause(S.timer);pause(S.breakTimer);S.session.status='종료';S.session.endedAt=new Date().toISOString();update('수업 종료');});on('viewRecords',function(){$('recordList').hidden=!$('recordList').hidden;renderRecords();});
+  on('resetDemo',function(){if(!confirm('이 브라우저의 목업 상태를 초기화할까요?'))return;S=seed();persist();render();say('목업 초기화 완료');});
+  function renderRecords(){var host=$('recordList');host.textContent='';S.records.slice().reverse().forEach(function(r){host.appendChild(make('p','note',new Date(r.at).toLocaleString('ko-KR')+' · '+r.action));});if(!S.records.length)host.appendChild(make('p','note','기록 없음'));}
   function render(){
-    document.getElementById('sessionState').textContent=S.session.status;
-    document.getElementById('attendeeCount').textContent=String(Math.max(0,Number(S.attendees)||0));
-    document.getElementById('attendeeMode').textContent=modeText();
-    document.getElementById('attendeeHint').textContent=S.session.mode==='online'?'목업 참여 인원 · 실시간 접속 집계 미연결':'목업 출석 인원 · 이름 없이 숫자만 저장';
-    document.getElementById('curNum').textContent=S.currentSlide+1;document.getElementById('curTotal').textContent='/ '+TOTAL;document.getElementById('curTitle').textContent=TITLES[S.currentSlide];
-    document.getElementById('prevBtn').disabled=S.currentSlide===0;document.getElementById('nextBtn').disabled=S.currentSlide===TOTAL-1;
-    Array.prototype.forEach.call(jump.children,function(b,i){b.setAttribute('aria-current',i===S.currentSlide?'true':'false');});
-    SWITCH_IDS.forEach(function(id){var on=switchValue(id);document.getElementById(id).setAttribute('aria-checked',String(on));document.getElementById(id+'State').textContent=on?'ON':'OFF';});
-    document.getElementById('practiceStep').value=S.practice.step;document.getElementById('practiceState').textContent=S.practice.done?'완료':'진행 전';document.getElementById('practiceDoneAt').textContent=S.practice.doneAt||'기록 없음';
-    document.getElementById('materialsAt').value=S.materials.at||'';document.getElementById('materialsUrl').value=S.materials.url||'';document.getElementById('materialsState').textContent=S.switches.materials?'자료 공개 상태 ON · '+(S.materials.at||'공개 시점 미정'):'자료 비공개 · '+(S.materials.at||'공개 시점 미정');
-    document.getElementById('endSummary').textContent=S.session.status==='종료'?'종료 시각 '+new Date(S.session.endedAt).toLocaleString('ko-KR')+' · 참여 '+S.attendees+'명 · 질문 '+S.questions.length+'건 · 후기 '+S.feedback.length+'건':'진행 상태 '+S.session.status+' · 참여 '+S.attendees+'명 · 질문 '+S.questions.length+'건 · 후기 '+S.feedback.length+'건';
-    document.querySelectorAll('.preset').forEach(function(b){b.setAttribute('aria-pressed',Number(b.dataset.min)===S.timer.minutes?'true':'false');});
-    renderTimer();renderItems('questions');renderItems('feedback');
+    Object.keys(fields).forEach(function(id){if(document.activeElement!==$(id))$(id).value=S.session[fields[id]];});$('materialsTiming').value=S.materials.timing;$('attendeeCount').textContent=S.attendees;$('sessionState').textContent=S.session.status;
+    $('curNum').textContent=S.currentSlide+1;$('curTotal').textContent='/ '+TOTAL;$('curTitle').textContent=TITLES[S.currentSlide];$('stickySlide').textContent=(S.currentSlide+1)+' / '+TOTAL;$('stickyLock').textContent='잠금 '+(isOn('swLock')?'ON':'OFF');$('stickyPdf').textContent='PDF '+(isOn('swPdf')?'ON':'OFF');
+    ['prevBtn','stickyPrev'].forEach(function(id){$(id).disabled=S.currentSlide===0;});['nextBtn','stickyNext'].forEach(function(id){$(id).disabled=S.currentSlide===TOTAL-1;});Array.from($('jump').children).forEach(function(b,i){b.setAttribute('aria-current',String(i===S.currentSlide));});
+    document.querySelectorAll('button.switch').forEach(function(el){el.setAttribute('aria-checked',String(isOn(el.id)));if($(el.id+'State'))$(el.id+'State').textContent=isOn(el.id)?'ON':'OFF';});
+    $('gatherState').textContent=S.gatheredAt?'목업 수집 기준: '+(S.currentSlide+1)+'장':'목업 동기화 대기';$('materialPreview').textContent=materialText();$('practiceStep').value=S.practice.step;$('practiceTask').textContent='수행 과제: '+tasks[S.practice.step][0];$('practiceCriteria').textContent='완료 기준: '+tasks[S.practice.step][1];$('practiceState').textContent=S.practice.status;
+    ['tStart','tPause','practiceDone','practiceStep'].forEach(function(id){$(id).disabled=!isOn('swPractice');});document.querySelectorAll('.preset').forEach(function(b){b.setAttribute('aria-pressed',String(Number(b.dataset.min)===S.timer.minutes));b.disabled=!isOn('swPractice');});
+    $('practiceCount').textContent='완료 '+S.participants.filter(function(p){return progress(p).done;}).length+' / '+S.participants.length+'명 · 도움 요청 '+S.participants.filter(function(p){return progress(p).help;}).length+'명';$('participantList').textContent='';S.participants.forEach(function(p,i){p=progress(p);$('participantList').appendChild(make('p','note','참가자 '+String(i+1).padStart(2,'0')+' · '+(p.done?'완료':'실습 중')+' · '+(p.help?'도움 요청':p.handledAt?'도움 처리 완료':'요청 없음')));});
+    $('breakReturn').disabled=!S.breakTimer.active;renderTimers();renderItems('questions');renderItems('feedback');$('questionForm').querySelector('button').disabled=!isOn('swQuestions');$('feedbackForm').querySelector('button').disabled=!isOn('swFeedback');
+    $('printAdmin').disabled=$('pdfExample').disabled=!isOn('swPdf');document.documentElement.classList.toggle('no-pdf',!isOn('swPdf'));
+    $('endSummary').textContent=S.session.status==='종료'?'종료 시각: '+new Date(S.session.endedAt).toLocaleString('ko-KR')+' · 질문 '+S.questions.length+'건 · 후기 '+S.feedback.length+'건':'수업 종료 전 · 상태 '+S.session.status;renderRecords();
   }
-  if(S.timer.running)startTick();
-  try{if(sessionStorage.getItem(AUTH_KEY)==='1')enterPanel();}catch(e){}
+  function renderTimers(){[['timer','tDisp','tState'],['breakTimer','breakDisp','breakState']].forEach(function(row){var t=S[row[0]],n=remaining(t);$(row[1]).textContent=fmt(n);$(row[2]).textContent=t.running?'진행 중':n===0?'종료':'정지';});}
+  setInterval(function(){var changed=false;[S.timer,S.breakTimer].forEach(function(t){if(t.running&&remaining(t)===0){pause(t);changed=true;}});if(changed){persist();render();}else renderTimers();},500);
+  window.addEventListener('storage',function(e){if(e.key===STATE_KEY){S=read();render();}});
+  render();try{if(sessionStorage.getItem(AUTH_KEY)==='1'){$('gate').hidden=true;$('panel').hidden=false;}}catch(e){}
 })();
-</script>
-</body>
-</html>
+</script></body></html>
