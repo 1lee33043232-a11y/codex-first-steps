@@ -28,6 +28,8 @@ export function createSync(cfg, deckId) {
   const auth = getAuth(app);
   const base = 'decks/' + deckId;
   const stateRef = ref(db, base + '/state');
+  // 집중 안내는 슬라이드 진행 상태와 분리 · 기존 state 형식 보존
+  const attentionRef = ref(db, base + '/attention');
 
   let isAdmin = false;
   let user = null;
@@ -81,6 +83,13 @@ export function createSync(cfg, deckId) {
     setSlide(n) { return patch({ slide: Math.max(0, n | 0) }); },
     setLock(on) { return patch({ locked: !!on }); },
     setPdf(on) { return patch({ pdf: !!on }); },
+    onAttention(cb) {
+      return onValue(attentionRef, (s) => cb(s.val()?.enabled === true), (e) => { cb(null); reportError(e); });
+    },
+    setAttention(on) {
+      if (!isAdmin) return Promise.reject(new Error('not-admin'));
+      return set(attentionRef, { enabled: !!on, updatedAt: serverTimestamp() });
+    },
     reset() { return patch({ ...DEFAULT_STATE }); },
 
     /* 접속자 수: 창을 닫거나 연결이 끊기면 서버가 자동으로 지움 */

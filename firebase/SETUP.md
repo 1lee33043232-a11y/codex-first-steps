@@ -64,6 +64,7 @@
 
 ## 7. 배포와 두 기기 확인
 
+- [ ] 집중 기능 규칙 포함: 최신 `database.rules.json` 전체 재게시 · `decks/{덱 이름}/attention = { enabled: 불리언, updatedAt: 서버 시각 }` · 등록 관리자만 쓰기
 - [ ] 규칙 게시·Authentication·admins 등록 확인 후 `firebase/firebase-config.js`의 `window.FIREBASE_SYNC_ENABLED = true` 설정
 - [ ] 구성 파일 변경 커밋 → `main` 푸시 → Vercel 배포 완료 확인
 - [ ] 강사: https://codex-first-steps.vercel.app/slides.html?admin → 강사 로그인
@@ -72,6 +73,7 @@
 - [ ] 잠금 OFF → 청중 개별 이동 확인 · 청중 이동이 강사 화면에 영향을 주지 않는지 확인
 - [ ] PDF OFF → PDF 저장 버튼과 P 단축키 비활성 확인 · ON 후 복원 확인
 - [ ] admins에 없는 사용자 → 강사 제어 버튼 미표시 · 상태 쓰기 거부 확인
+- [ ] 강사 `🤫 집중` → 강사·학생 오버레이 표시 → 강사 해제·Esc → 모두 닫힘 · 학생 Esc로 닫기 불가 확인
 - [ ] 규칙 시뮬레이터에서 비로그인 쓰기 거부·등록 UID 쓰기 허용 확인
 - [ ] 기존 PDF 링크·영상 링크·음성 재생·이미지 표시 확인
 

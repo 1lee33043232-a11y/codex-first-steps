@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>노트북LM 마스터하기: 내 자료로 만드는 AI 학습 도우미</title>
 <meta name="description" content="성인 초급자 10명 내외 · 60분 실습 강의 · AI연구소 이연희 강사">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#e8e0f3">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -148,6 +148,15 @@ table.tbl td:first-child{color:var(--sub)}
 .login-box button.primary{background:#111;color:#FFF;border-color:#111}
 .login-box .err{color:#B71C1C;font-size:13px;font-weight:700;min-height:1.2em}
 #nav button[hidden]{display:none!important}
+/* 집중 안내: 소리 없음 · 학생에게 닫기 제어 없음 · 하단 강사 버튼만 접근 가능 */
+.focus-overlay{position:fixed;inset:0 0 var(--nav-h);z-index:550;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;color:#fff}
+.focus-overlay[hidden]{display:none}
+.focus-content{display:flex;flex-direction:column;align-items:center;gap:16px;max-width:640px;max-height:100%;animation:focus-enter .28s ease-out}
+.focus-content img{display:block;width:min(320px,65vw);height:min(380px,48dvh);max-height:calc(100dvh - var(--nav-h) - 125px);object-fit:contain;flex-shrink:1;min-height:0}
+.focus-content p{font-size:clamp(18px,3.5vw,28px);font-weight:800;line-height:1.5;text-wrap:balance}
+@keyframes focus-enter{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.focus-content{animation:none}}
+@media print{.focus-overlay{display:none!important}}
 .hint{color:#9A9A9A;font-size:12.5px}
 #progress{position:fixed;left:0;bottom:var(--nav-h);height:3px;background:#FFFFFF;width:0;z-index:201;transition:width .2s}
 @media (max-width:760px){
@@ -193,12 +202,13 @@ table.tbl td:first-child{color:var(--sub)}
   html.no-pdf body::before{content:"PDF 저장이 비활성화되어 있습니다. 강사에게 문의하세요.";display:block;padding:2rem;font-size:14pt;color:#000}
 }
 </style>
+<link rel="stylesheet" href="clay-theme.css">
 </head>
-<body>
+<body class="clay-slides">
 
 <main id="stage">
 <!-- ===== 1. 노트북LM 마스터하기 ===== -->
-<section class="slide title-slide active" aria-label="1. 노트북LM 마스터하기" data-duration="1"><div class="slide-content"><div class="kicker">표지 · 1분</div><h1>노트북LM 마스터하기</h1><p class="lede">내 자료로 만드는 AI 학습 도우미</p><div class="meta-row"><span>성인 초급자 10명 내외</span><span>60분 실습</span><span>AI연구소 이연희 강사</span></div></div></section>
+<section class="slide title-slide active" aria-label="1. 노트북LM 마스터하기" data-duration="1"><div class="slide-content"><div class="kicker">표지 · 1분</div><h1>노트북LM 마스터하기</h1><p class="lede">내 자료로 만드는 AI 학습 도우미</p><div class="meta-row"><span>성인 초급자 10명 내외</span><span>60분 실습</span><span>AI연구소 이연희 강사</span></div></div><img class="clay-cover-image" src="assets/notebooklm/clay-ai-notebook.png" alt="노트북과 함께 공부하는 입체 학습자와 AI 캐릭터" width="1536" height="1024"></section>
 <!-- ===== 2. 강의 순서 ===== -->
 <section class="slide " aria-label="2. 강의 순서" data-duration="1"><div class="slide-content"><div class="kicker">설명 · 1분</div><h2>강의 순서</h2><div class="card-grid c3"><div class="card"><div class="t">자료 준비</div><div class="d">개념 → 노트북 생성 → 소스 추가</div></div><div class="card"><div class="t">학습 실습</div><div class="d">질문 → 출처 확인 → 요약·퀴즈</div></div><div class="card"><div class="t">결과 활용</div><div class="d">기능 안내 → BananaNL → 결과 검토</div></div></div></div></section>
 <!-- ===== 3. 노트북LM 개념 ===== -->
@@ -256,6 +266,7 @@ table.tbl td:first-child{color:var(--sub)}
   </div>
   <button type="button" id="loginOpen" hidden>강사 로그인</button>
   <button type="button" id="logoutBtn" hidden>로그아웃</button>
+  <button type="button" id="focusBtn" aria-pressed="false" aria-controls="focusOverlay" hidden>🤫 집중</button>
   <span class="grow"></span>
   <span class="hint hide-sm">← → 이동 · G 전체보기 · P PDF</span>
   <button type="button" id="gridBtn" aria-haspopup="dialog" aria-controls="gridOverlay">▦ 전체 보기</button>
@@ -275,6 +286,10 @@ table.tbl td:first-child{color:var(--sub)}
     <div class="err" id="loginError" role="status"></div>
     <div class="row"><button type="button" id="loginCancel">취소</button><button class="primary" type="submit">로그인</button></div>
   </form>
+</div>
+
+<div id="focusOverlay" class="focus-overlay" role="dialog" aria-modal="true" aria-labelledby="focusMessage" tabindex="-1" hidden>
+  <div class="focus-content"><img src="assets/pinky-shh.png" alt="손가락을 입 앞에 세운 핑키 집중 안내 캐릭터"><p id="focusMessage">쉿! 잠깐, 선생님 설명에 집중해 주세요.</p></div>
 </div>
 
 <script id="deckContent">
@@ -316,6 +331,34 @@ table.tbl td:first-child{color:var(--sub)}
   var adminMode = new URLSearchParams(location.search).has('admin');
   var isAdmin = false, sync = null, syncReady = false, lockOn = false, pdfOn = true, applyingRemote = false;
   var lastState = null, connected = false, stateError = false;
+  var attentionOn = false, localAttention = false, attentionPending = false, beforeAttentionFocus = null;
+  var focusBtn = document.getElementById('focusBtn'), focusOverlay = document.getElementById('focusOverlay');
+  function canFocusControl(){ return adminMode && (localAttention || isAdmin); }
+  function renderAttentionControl(){
+    focusBtn.hidden = !canFocusControl();
+    focusBtn.disabled = attentionPending;
+    focusBtn.setAttribute('aria-pressed', String(attentionOn));
+    focusBtn.textContent = attentionOn ? '🤫 집중 해제' : '🤫 집중';
+  }
+  function applyAttention(on){
+    var changed = attentionOn !== !!on;
+    attentionOn = !!on; focusOverlay.hidden = !attentionOn;
+    stage.inert = attentionOn;
+    if (attentionOn && changed) {
+      beforeAttentionFocus = document.activeElement;
+      if(gridOverlay.classList.contains('open')) closeGrid();
+      focusOverlay.focus();
+    }
+    renderAttentionControl(); updateNavigation();
+    if (!attentionOn && changed && beforeAttentionFocus && beforeAttentionFocus.isConnected) beforeAttentionFocus.focus();
+  }
+  function toggleAttention(){
+    if(!canFocusControl() || attentionPending) return;
+    if(localAttention){ applyAttention(!attentionOn); return; }
+    attentionPending = true; renderAttentionControl();
+    sync.setAttention(!attentionOn).catch(showSyncError).finally(function(){attentionPending=false;renderAttentionControl();});
+  }
+  focusBtn.addEventListener('click', toggleAttention);
 
   function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); } catch (e) { /* 저장 불가 환경 · 무시 */ } }
@@ -340,6 +383,7 @@ table.tbl td:first-child{color:var(--sub)}
   var lastFocus = null;
 
   function show(i){
+    if(attentionOn && !applyingRemote) return;
     if (syncReady && lockOn && !isAdmin && !applyingRemote) return;
     idx = Math.max(0, Math.min(total - 1, i));
     slides.forEach(function(s, n){
@@ -354,9 +398,11 @@ table.tbl td:first-child{color:var(--sub)}
     if (syncReady && isAdmin && !applyingRemote) sync.setSlide(idx).catch(showSyncError);
   }
   function updateNavigation(){
-    var blocked = syncReady && lockOn && !isAdmin;
+    var blocked = attentionOn || (syncReady && lockOn && !isAdmin);
     navPrev.disabled = blocked || idx === 0;
     navNext.disabled = blocked || idx === total - 1;
+    document.getElementById('gridBtn').disabled = attentionOn;
+    document.getElementById('printBtn').disabled = attentionOn || !pdfOn;
   }
 
   function scaleMinis(){
@@ -385,6 +431,13 @@ table.tbl td:first-child{color:var(--sub)}
         if (e.shiftKey && t === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && t === last) { e.preventDefault(); first.focus(); }
       }
+      return;
+    }
+    if(attentionOn){
+      if(e.key === 'Escape' && canFocusControl()){e.preventDefault();toggleAttention();return;}
+      if(e.key === 'Tab'){e.preventDefault();if(canFocusControl())focusBtn.focus();else focusOverlay.focus();return;}
+      if(e.target === focusBtn && (e.key === 'Enter' || e.key === ' ')) return;
+      if(['Escape','ArrowRight','ArrowLeft','PageDown','PageUp','Home','End',' ','g','G','p','P','ㅎ','ㅔ'].indexOf(e.key)!==-1)e.preventDefault();
       return;
     }
     if (t && t.closest && t.closest('input, textarea, select, audio, video')) return;
@@ -439,10 +492,12 @@ table.tbl td:first-child{color:var(--sub)}
   function initializeFirebase(){
     var cfg = window.FIREBASE_CONFIG;
     if (window.FIREBASE_SYNC_ENABLED === false) {
+      localAttention = true; renderAttentionControl();
       setStatus(adminMode ? 'Firebase 활성화 후 로그인 가능' : '자유 열람');
       return;
     }
     if (!cfg || !['apiKey','authDomain','databaseURL','projectId','appId'].every(function(k){ return typeof cfg[k] === 'string' && cfg[k].trim() && !/[\[\]…]/.test(cfg[k]); }) || !/^https:\/\//.test(cfg.databaseURL)) {
+      localAttention = true; renderAttentionControl();
       setStatus(adminMode ? 'Firebase 설정 후 로그인 가능' : '자유 열람');
       return;
     }
@@ -450,6 +505,8 @@ table.tbl td:first-child{color:var(--sub)}
       if (!mod.isConfigured(cfg)) { setStatus('자유 열람'); return; }
       sync = mod.createSync(cfg, window.DECK_ID || 'codex-first-steps-20261009');
       syncReady = true;
+      localAttention = false; renderAttentionControl();
+      sync.onAttention(function(on){if(on === null){showSyncError();return;}applyAttention(on);});
       sync.onError(showSyncError);
       sync.onConnection(function(on){ connected = on; renderSyncStatus(); });
       document.getElementById('loginOpen').hidden = !adminMode;
@@ -471,6 +528,7 @@ table.tbl td:first-child{color:var(--sub)}
       });
       sync.onAdmin(function(allowed, user){
         isAdmin = adminMode && !!allowed;
+        renderAttentionControl();
         document.getElementById('adminControls').classList.toggle('show', isAdmin && adminMode);
         document.getElementById('loginOpen').hidden = !adminMode || isAdmin;
         document.getElementById('logoutBtn').hidden = !adminMode || !user;
@@ -487,7 +545,7 @@ table.tbl td:first-child{color:var(--sub)}
   var firebaseConfigScript = document.createElement('script');
   firebaseConfigScript.src = './firebase/firebase-config.js';
   firebaseConfigScript.onload = initializeFirebase;
-  firebaseConfigScript.onerror = function(){ setStatus('자유 열람'); };
+  firebaseConfigScript.onerror = function(){ localAttention = true;renderAttentionControl();setStatus('자유 열람'); };
   document.head.appendChild(firebaseConfigScript);
 
   /* 타이머: 벽시계 기준 (탭이 뒤로 가도 시간이 밀리지 않음) */

@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>관리자 시제품 · 노트북LM 마스터하기</title>
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#e8e0f3">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -125,12 +125,13 @@ button,select,textarea{font:inherit}.card{min-width:0}.grid{align-items:start}
 .controlbar .pill{white-space:normal}.card h2{flex-wrap:wrap}
 .item p{white-space:normal}#status{z-index:100;max-width:90vw;width:max-content;text-align:center}
 @media print{#gate,.controlbar,header.top,#status,button{display:none!important}.grid{display:block}.card{break-inside:avoid;box-shadow:none;margin-bottom:1rem}html.no-pdf #panel{display:none!important}html.no-pdf body::before{content:"PDF 저장 차단 · 관리자 포함 동일 정책";display:block;padding:2rem}}
-</style></head><body>
+</style>
+<link rel="stylesheet" href="clay-theme.css"></head><body class="clay-admin">
 <!-- 서버 연결 지점: Firebase Authentication 로그인 및 admins/{UID} 권한 확인 · 데모 로그인으로 대체 -->
 <div id="gate"><form id="gateForm"><h1>노트북LM 관리자 시제품 <span class="demo-badge">목업</span></h1><p class="warn-box">서버 없음 · 이 브라우저에만 저장 · 실제 인증·청중 동기화 미연결</p><label for="pw">데모 비밀번호: 1234</label><input id="pw" type="password" autocomplete="off" required><p id="gateErr" role="alert"></p><button class="btn" type="submit">입장</button></form></div>
 <div class="wrap" id="panel" hidden><header class="top"><h1>노트북LM 강의 관리자 <span class="demo-badge">시제품 · 서버 없음</span></h1><div class="row"><a class="btn ghost" href="index.html" target="_blank" rel="noopener">강의 홈</a><button class="btn ghost" type="button" id="logout">로그아웃</button></div></header>
 <p class="note">10명 내외 · 60분 실습 · 수업 방식·자료 공개 시점·질문·후기 사용 여부 미정</p>
-<nav class="controlbar" aria-label="고정 수업 제어"><button class="btn" type="button" id="stickyPrev">◀ 이전</button><span class="pill" id="stickySlide" aria-live="polite">1 / 22</span><button class="btn" type="button" id="stickyNext">다음 ▶</button><span class="pill" id="stickyLock">잠금 OFF</span><span class="pill" id="stickyPdf">PDF ON</span><a class="btn ghost" href="#hCard5">목차 이동</a></nav><main class="grid">
+<div class="clay-admin-intro"><img src="assets/notebooklm/clay-ai-notebook.png" alt="노트북과 학습자 캐릭터" width="1536" height="1024"><div><p class="intro-title">내 자료로 만드는 AI 수업</p><p class="note">수업 준비 → 진행 → 실습 → 정리</p></div></div><nav class="controlbar" aria-label="고정 수업 제어"><button class="btn" type="button" id="stickyPrev">◀ 이전</button><span class="pill" id="stickySlide" aria-live="polite">1 / 22</span><button class="btn" type="button" id="stickyNext">다음 ▶</button><span class="pill" id="stickyLock">잠금 OFF</span><span class="pill" id="stickyPdf">PDF ON</span><a class="btn ghost" href="#hCard5">목차 이동</a></nav><main class="grid">
 <!-- 서버 연결 지점: Firebase Authentication 로그인·로그아웃 및 admins/{UID} 권한 확인 -->
 <section class="card" aria-labelledby="hCard1"><h2 id="hCard1">1. 강사 로그인</h2><p>목업 강사 · 로그인 상태 <span class="pill">데모 로그인</span></p><p class="note">비밀번호 1234 · 실제 인증·권한 기능 아님</p><button type="button" class="btn ghost" id="logoutCard">로그아웃</button></section>
 <!-- 서버 연결 지점: sessions/{deckId}: title, mode, date, capacity, duration / viewers 집계 -->
