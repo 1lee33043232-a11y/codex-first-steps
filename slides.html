@@ -148,12 +148,15 @@ table.tbl td:first-child{color:var(--sub)}
 .login-box button.primary{background:#111;color:#FFF;border-color:#111}
 .login-box .err{color:#B71C1C;font-size:13px;font-weight:700;min-height:1.2em}
 #nav button[hidden]{display:none!important}
-/* 집중 안내: 소리 없음 · 학생에게 닫기 제어 없음 · 하단 강사 버튼만 접근 가능 */
+/* 집중 안내: 화면 표시마다 음성 재생 · 학생에게 닫기 제어 없음 */
 .focus-overlay{position:fixed;inset:0 0 var(--nav-h);z-index:550;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;color:#fff}
 .focus-overlay[hidden]{display:none}
 .focus-content{display:flex;flex-direction:column;align-items:center;gap:16px;max-width:640px;max-height:100%;animation:focus-enter .28s ease-out}
-.focus-content img{display:block;width:min(320px,65vw);height:min(380px,48dvh);max-height:calc(100dvh - var(--nav-h) - 125px);object-fit:contain;flex-shrink:1;min-height:0}
+.focus-content img{display:block;width:min(320px,65vw);height:min(380px,48dvh);max-height:calc(100dvh - var(--nav-h) - 180px);object-fit:contain;flex-shrink:1;min-height:0}
 .focus-content p{font-size:clamp(18px,3.5vw,28px);font-weight:800;line-height:1.5;text-wrap:balance}
+.focus-sound-btn{font:inherit;font-weight:800;min-height:44px;padding:8px 18px;border:0;border-radius:16px;background:#d3eee3;color:#33374e;cursor:pointer}
+.focus-sound-btn[hidden]{display:none}
+.focus-sound-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
 @keyframes focus-enter{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.focus-content{animation:none}}
 @media print{.focus-overlay{display:none!important}}
@@ -289,8 +292,9 @@ table.tbl td:first-child{color:var(--sub)}
 </div>
 
 <div id="focusOverlay" class="focus-overlay" role="dialog" aria-modal="true" aria-labelledby="focusMessage" tabindex="-1" hidden>
-  <div class="focus-content"><img src="assets/pinky-shh.png" alt="손가락을 입 앞에 세운 핑키 집중 안내 캐릭터"><p id="focusMessage">쉿! 잠깐, 선생님 설명에 집중해 주세요.</p></div>
+  <div class="focus-content"><img src="assets/pinky-shh.png" alt="손가락을 입 앞에 세운 핑키 집중 안내 캐릭터"><p id="focusMessage">쉿! 잠깐, 선생님 설명에 집중해 주세요.</p><button type="button" id="focusSoundBtn" class="focus-sound-btn" aria-label="집중 안내 음성 재생" hidden>🔊 음성 재생</button></div>
 </div>
+<audio id="focusAudio" preload="auto" hidden><source src="assets/pinky-focus.mp3" type="audio/mpeg"><source src="assets/pinky-focus-original.m4a" type="audio/mp4"></audio>
 
 <script id="deckContent">
 (function(){
@@ -333,6 +337,27 @@ table.tbl td:first-child{color:var(--sub)}
   var lastState = null, connected = false, stateError = false;
   var attentionOn = false, localAttention = false, attentionPending = false, beforeAttentionFocus = null;
   var focusBtn = document.getElementById('focusBtn'), focusOverlay = document.getElementById('focusOverlay');
+  var focusAudio = document.getElementById('focusAudio'), focusSoundBtn = document.getElementById('focusSoundBtn'), soundRevision = 0;
+  function stopFocusSound(){
+    ++soundRevision; focusAudio.pause();
+    try{focusAudio.currentTime=0;}catch(e){}
+    focusSoundBtn.hidden=true;
+  }
+  function playFocusSound(){
+    if(!attentionOn)return;
+    var revision=++soundRevision;
+    focusAudio.pause();
+    try{focusAudio.currentTime=0;}catch(e){}
+    focusSoundBtn.hidden=true;
+    // 학생 화면 등 자동 재생 제한 시 재생 버튼 제공 · 집중 해제 권한은 그대로 유지
+    Promise.resolve(focusAudio.play()).then(function(){
+      if(revision!==soundRevision||!attentionOn)return;
+      if(document.activeElement===focusSoundBtn)focusOverlay.focus();
+    }).catch(function(){
+      if(revision===soundRevision&&attentionOn)focusSoundBtn.hidden=false;
+    });
+  }
+  focusSoundBtn.addEventListener('click',playFocusSound);
   function canFocusControl(){ return adminMode && (localAttention || isAdmin); }
   function renderAttentionControl(){
     focusBtn.hidden = !canFocusControl();
@@ -348,7 +373,10 @@ table.tbl td:first-child{color:var(--sub)}
       beforeAttentionFocus = document.activeElement;
       if(gridOverlay.classList.contains('open')) closeGrid();
       focusOverlay.focus();
+      stage.querySelectorAll('audio, video').forEach(function(media){media.pause();});
+      playFocusSound();
     }
+    if(!attentionOn&&changed)stopFocusSound();
     renderAttentionControl(); updateNavigation();
     if (!attentionOn && changed && beforeAttentionFocus && beforeAttentionFocus.isConnected) beforeAttentionFocus.focus();
   }
@@ -435,8 +463,15 @@ table.tbl td:first-child{color:var(--sub)}
     }
     if(attentionOn){
       if(e.key === 'Escape' && canFocusControl()){e.preventDefault();toggleAttention();return;}
-      if(e.key === 'Tab'){e.preventDefault();if(canFocusControl())focusBtn.focus();else focusOverlay.focus();return;}
-      if(e.target === focusBtn && (e.key === 'Enter' || e.key === ' ')) return;
+      if(e.key === 'Tab'){
+        e.preventDefault();var controls=[];
+        if(!focusSoundBtn.hidden)controls.push(focusSoundBtn);
+        if(canFocusControl()&&!focusBtn.disabled)controls.push(focusBtn);
+        if(!controls.length)focusOverlay.focus();
+        else{var position=controls.indexOf(e.target);var next=position<0?(e.shiftKey?controls.length-1:0):(position+(e.shiftKey?-1:1)+controls.length)%controls.length;controls[next].focus();}
+        return;
+      }
+      if((e.target === focusBtn || e.target === focusSoundBtn) && (e.key === 'Enter' || e.key === ' ')) return;
       if(['Escape','ArrowRight','ArrowLeft','PageDown','PageUp','Home','End',' ','g','G','p','P','ㅎ','ㅔ'].indexOf(e.key)!==-1)e.preventDefault();
       return;
     }

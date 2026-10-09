@@ -23,7 +23,7 @@
 - [ ] 로그인 방법 → 이메일/비밀번호 사용 설정 → 저장
 - [ ] 사용자 → 사용자 추가 → 강사 이메일과 비밀번호를 콘솔에 직접 입력
 - [ ] 생성된 강사 사용자 UID 복사
-- [ ] 설정 → 승인된 도메인 → `codex-first-steps.vercel.app` 추가(이미 있으면 유지)
+- [ ] 설정 → 승인된 도메인 → `notebooklm-master.vercel.app` 추가(이미 있으면 유지)
 - [ ] 비밀번호·서비스 계정 비공개 키를 저장소에 넣지 않기
 
 ## 4. 데이터베이스 규칙
@@ -67,8 +67,8 @@
 - [ ] 집중 기능 규칙 포함: 최신 `database.rules.json` 전체 재게시 · `decks/{덱 이름}/attention = { enabled: 불리언, updatedAt: 서버 시각 }` · 등록 관리자만 쓰기
 - [ ] 규칙 게시·Authentication·admins 등록 확인 후 `firebase/firebase-config.js`의 `window.FIREBASE_SYNC_ENABLED = true` 설정
 - [ ] 구성 파일 변경 커밋 → `main` 푸시 → Vercel 배포 완료 확인
-- [ ] 강사: https://codex-first-steps.vercel.app/slides.html?admin → 강사 로그인
-- [ ] 청중: https://codex-first-steps.vercel.app/slides.html (다른 기기나 브라우저)
+- [ ] 강사: https://notebooklm-master.vercel.app/slides.html?admin → 강사 로그인
+- [ ] 청중: https://notebooklm-master.vercel.app/slides.html (다른 기기나 브라우저)
 - [ ] 잠금 ON → 강사 다음 장 이동 → 청중 같은 번호 확인 · 청중 직접 이동 불가 확인
 - [ ] 잠금 OFF → 청중 개별 이동 확인 · 청중 이동이 강사 화면에 영향을 주지 않는지 확인
 - [ ] PDF OFF → PDF 저장 버튼과 P 단축키 비활성 확인 · ON 후 복원 확인
@@ -82,3 +82,9 @@
 실제 프로젝트 구성 입력과 규칙 게시 이전에는 실제 Firebase 두 기기 동기화가 완료된 상태가 아님.
 
 참고: [웹 앱 등록](https://firebase.google.com/docs/web/setup), [이메일·비밀번호 인증](https://firebase.google.com/docs/auth/web/password-auth), [데이터베이스 규칙](https://firebase.google.com/docs/database/security).
+
+## Vercel 공개 주소
+
+프로젝트 이름: `notebooklm-master`. 공개 주소: `https://notebooklm-master.vercel.app`. 이전 `codex-first-steps.vercel.app` 주소는 307 리디렉션으로 새 주소 연결. GitHub 저장소 이름과 Firebase 덱 ID는 유지.
+
+집중 안내 음성: `assets/pinky-focus.mp3` · M4A 원본: `assets/pinky-focus-original.m4a` · 표시마다 처음부터 재생 · 해제 시 중지 · 자동 재생 차단 시 음성 재생 버튼 제공.
