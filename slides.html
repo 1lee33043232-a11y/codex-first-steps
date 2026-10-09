@@ -372,7 +372,7 @@ table.tbl td:first-child{color:var(--sub)}
 
   document.addEventListener('keydown', function(e){
     var t = e.target;
-    if (t && t.closest && t.closest('input, textarea, select')) return;
+    if (t && t.closest && t.closest('input, textarea, select, audio, video')) return;
     if (gridOverlay.classList.contains('open')) {
       if (e.key === 'Escape' || e.key === 'g' || e.key === 'G') { closeGrid(); }
       return;
@@ -390,7 +390,7 @@ table.tbl td:first-child{color:var(--sub)}
 
   /* 무대 클릭: 오른쪽 절반 다음 · 왼쪽 절반 이전 (버튼·링크·프롬프트 카드 제외) */
   stage.addEventListener('click', function(e){
-    if (e.target.closest('button, a, .prompt-card')) return;
+    if (e.target.closest('button, a, audio, video, .prompt-card')) return;
     var rect = stage.getBoundingClientRect();
     if (e.clientX - rect.left > rect.width / 2) show(idx + 1); else show(idx - 1);
   });
