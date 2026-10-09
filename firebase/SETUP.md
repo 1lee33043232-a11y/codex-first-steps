@@ -1,13 +1,13 @@
 # NotebookLM 강의 Firebase 연결 체크리스트
 
-프로젝트 표시 이름: `0930notebooklm`. 2026년 10월 9일 사용자 승인 후 새 프로젝트 생성 완료 화면 확인. 실제 프로젝트 ID: `notebooklm-3b8ab`. 웹 앱 등록 완료 단계 확인. SDK 구성과 데이터베이스 URL은 아직 확인되지 않음. 이름으로 ID·주소를 만들지 않기.
+2026년 10월 9일 사용자 제공 웹 앱 SDK 구성 화면에서 확인한 실제 프로젝트 ID: `notebooklm-3b8ab-fff4a`. 이 SDK 구성의 프로젝트를 연결 대상으로 사용. 앞서 기록한 `notebooklm-3b8ab`과 다른 ID이므로 최신 SDK 화면 기준으로 수정. 웹 앱 구성은 `firebase/firebase-config.js`에 입력 완료. 데이터베이스 URL은 아직 확인되지 않음.
 
-현재 상태: 프로젝트 생성과 웹 앱 등록 단계 확인 이후 콘솔의 약관 상태 오류·권한 오류·로딩 지연 발생. Realtime Database·Authentication·규칙·admins 설정은 미완료. 실제 연결값 입력과 배포 전까지 공개 강의는 자유 열람 상태 유지.
+현재 상태: Realtime Database·Authentication·규칙·admins 설정은 완료 확인 전. `databaseURL`은 빈 문자열로 유지. 데이터베이스 주소와 나머지 콘솔 설정을 확인하기 전까지 공개 강의는 자유 열람 상태 유지. SDK 화면의 Analytics 예시는 실행하지 않음.
 
 ## 1. 기존 프로젝트 확인
 
 - [ ] https://console.firebase.google.com/ 에서 프로젝트를 만든 Google 계정으로 로그인
-- [ ] 기존 `0930notebooklm` 프로젝트 선택
+- [ ] 실제 ID가 `notebooklm-3b8ab-fff4a`인 프로젝트 선택
 - [ ] 프로젝트 설정 → 일반 → 프로젝트 ID 확인(표시 이름과 다를 수 있음)
 
 ## 2. Realtime Database
