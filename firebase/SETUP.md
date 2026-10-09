@@ -1,8 +1,8 @@
 # NotebookLM 강의 Firebase 연결 체크리스트
 
-2026년 10월 9일 사용자 제공 웹 앱 SDK 구성 화면에서 확인한 실제 프로젝트 ID: `notebooklm-3b8ab-fff4a`. 이 SDK 구성의 프로젝트를 연결 대상으로 사용. 앞서 기록한 `notebooklm-3b8ab`과 다른 ID이므로 최신 SDK 화면 기준으로 수정. 웹 앱 구성은 `firebase/firebase-config.js`에 입력 완료. 데이터베이스 URL은 아직 확인되지 않음.
+2026년 10월 9일 사용자 제공 웹 앱 SDK 구성 화면에서 확인한 실제 프로젝트 ID: `notebooklm-3b8ab-fff4a`. 이 SDK 구성의 프로젝트를 연결 대상으로 사용. 앞서 기록한 `notebooklm-3b8ab`과 다른 ID이므로 최신 SDK 화면 기준으로 수정. 웹 앱 구성과 Realtime Database URL은 `firebase/firebase-config.js`에 입력 완료.
 
-현재 상태: Realtime Database·Authentication·규칙·admins 설정은 완료 확인 전. `databaseURL`은 빈 문자열로 유지. 데이터베이스 주소와 나머지 콘솔 설정을 확인하기 전까지 공개 강의는 자유 열람 상태 유지. SDK 화면의 Analytics 예시는 실행하지 않음.
+현재 상태: Realtime Database 생성·싱가포르 위치·실제 URL 확인 완료. URL: `https://notebooklm-3b8ab-fff4a-default-rtdb.asia-southeast1.firebasedatabase.app`. Authentication·규칙·admins 설정은 완료 확인 전. `window.FIREBASE_SYNC_ENABLED = false`로 자유 열람 유지. 나머지 콘솔 설정 확인 후 `true`로 변경하여 배포. SDK 화면의 Analytics 예시는 실행하지 않음.
 
 ## 1. 기존 프로젝트 확인
 
@@ -64,6 +64,7 @@
 
 ## 7. 배포와 두 기기 확인
 
+- [ ] 규칙 게시·Authentication·admins 등록 확인 후 `firebase/firebase-config.js`의 `window.FIREBASE_SYNC_ENABLED = true` 설정
 - [ ] 구성 파일 변경 커밋 → `main` 푸시 → Vercel 배포 완료 확인
 - [ ] 강사: https://codex-first-steps.vercel.app/slides.html?admin → 강사 로그인
 - [ ] 청중: https://codex-first-steps.vercel.app/slides.html (다른 기기나 브라우저)

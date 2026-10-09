@@ -438,6 +438,10 @@ table.tbl td:first-child{color:var(--sub)}
   }
   function initializeFirebase(){
     var cfg = window.FIREBASE_CONFIG;
+    if (window.FIREBASE_SYNC_ENABLED === false) {
+      setStatus(adminMode ? 'Firebase 활성화 후 로그인 가능' : '자유 열람');
+      return;
+    }
     if (!cfg || !['apiKey','authDomain','databaseURL','projectId','appId'].every(function(k){ return typeof cfg[k] === 'string' && cfg[k].trim() && !/[\[\]…]/.test(cfg[k]); }) || !/^https:\/\//.test(cfg.databaseURL)) {
       setStatus(adminMode ? 'Firebase 설정 후 로그인 가능' : '자유 열람');
       return;
